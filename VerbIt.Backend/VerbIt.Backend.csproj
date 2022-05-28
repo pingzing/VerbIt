@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.5" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\VerbIt.DataModels\VerbIt.DataModels.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content Update="wwwroot\**\*.*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="wwwroot\" />
+	</ItemGroup>
+
+	<!--Target to publish and copy the Blazor WASM app-->
+	<Target Name="_CompileAndPublishClient" BeforeTargets="BeforeBuild">
+		<Exec Command="
+			  dotnet publish ../VerbIt.Client -o ./
+			  "/>
+	</Target>
+
+	<!--Tweaks to the SDK-style project system that will make it look at the client to determine up-to-date-ness-->
+	<ItemGroup >
+		<UpToDateCheckInput Include="../VerbIt.Client/**/*.*" Exclude="*.dll;**/bin/**/*.*;**/obj/**/*.*" />
+		<UpToDateCheckInput Include="web.config" />
+	</ItemGroup>
+
+</Project>
