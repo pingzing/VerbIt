@@ -20,4 +20,8 @@
     <ProjectReference Include="..\VerbIt.DataModels\VerbIt.DataModels.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Components\" />
+  </ItemGroup>
+
 </Project>

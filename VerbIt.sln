@@ -3,16 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32516.85
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerbIt.Client", "VerbIt.Client\VerbIt.Client.csproj", "{1AE24ED7-D24F-4D8B-BF21-EA416B049850}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VerbIt.Client", "VerbIt.Client\VerbIt.Client.csproj", "{1AE24ED7-D24F-4D8B-BF21-EA416B049850}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerbIt.Backend", "VerbIt.Backend\VerbIt.Backend.csproj", "{1931067B-492E-484A-9DE4-69129040E821}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VerbIt.Backend", "VerbIt.Backend\VerbIt.Backend.csproj", "{1931067B-492E-484A-9DE4-69129040E821}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VerbIt.DataModels", "VerbIt.DataModels\VerbIt.DataModels.csproj", "{5A88FC97-C541-4BAA-90AE-8BA2C699A39B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VerbIt.DataModels", "VerbIt.DataModels\VerbIt.DataModels.csproj", "{5A88FC97-C541-4BAA-90AE-8BA2C699A39B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repo-Level", "Repo-Level", "{BB05E33B-576A-48C1-AF74-4C9DB2D8E14C}"
 	ProjectSection(SolutionItems) = preProject
-		.gitattributes = .gitattributes
 		.csharpierrc.json = .csharpierrc.json
+		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 	EndProjectSection
 EndProject
