@@ -30,10 +30,7 @@ public class AuthController : ControllerBase
     [Route("login")]
     public async Task<ActionResult<string>> Login(LoginRequest request)
     {
-        AuthenticatedUser? result = await _verbitAuthService.Login(
-            request.Username,
-            request.Password
-        );
+        AuthenticatedUser? result = await _verbitAuthService.Login(request.Username, request.Password);
         if (result == null)
         {
             return BadRequest();

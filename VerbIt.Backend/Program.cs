@@ -13,6 +13,7 @@ IConfigurationSection? jwtConfigSection = builder.Configuration.GetSection(JwtSe
 builder.Services.AddOptions<JwtSettings>().Bind(jwtConfigSection);
 JwtSettings jwtSettings = jwtConfigSection.Get<JwtSettings>();
 
+// Auth
 builder.Services
     .AddAuthentication(opt =>
     {
@@ -26,20 +27,22 @@ builder.Services
             ValidateIssuer = true,
             ValidIssuer = jwtSettings.Issuer,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings.SecretKey)
-            ),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
             ValidateAudience = true,
             ValidAudience = jwtSettings.Audience,
             ValidateLifetime = true,
         };
     });
-builder.Services.AddControllers();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// MVC and Blazor
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Local services
 builder.Services.AddTransient<IVerbitRepository, VerbitRepository>();
 builder.Services.AddTransient<IVerbitAuthService, VerbitAuthService>();
 
@@ -52,23 +55,20 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseWebAssemblyDebugging();
 }
-
-app.UseStaticFiles();
-app.UseBlazorFrameworkFiles();
+else
+{
+    app.UseHsts();
+}
 
 app.UseHttpsRedirection();
 
-app.UseRouting()
-    .UseAuthentication()
-    .UseAuthorization()
-    .UseEndpoints(endpoints =>
-    {
-        // Web API endpoints
-        endpoints.MapControllers();
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
 
-        // Blazor WASM endpoint
-        endpoints.MapFallbackToFile("index.html");
-    });
+app.MapRazorPages();
+app.MapControllers();
+app.MapFallbackToFile("index.html");
 
 app.Run();

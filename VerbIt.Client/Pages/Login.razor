@@ -1,12 +1,11 @@
 ﻿@page "/login"
 @inject INetworkService _networkService;
 @inject NavigationManager _navigationManager;
-@inject ILocalStorageService _localStorageService;
 
 <h3>Login</h3>
 
 <label for="usernameInput">Username</label>
-<input id="usernameInput" @bind="loginRequest.Username" type="text"/>
+<input id="usernameInput" @bind="loginRequest.Username" type="text" class="border-solid"/>
 
 <label for="passwordInput">Password</label>
 <input id="passwordInput" @bind="loginRequest.Password" type="password"/>
@@ -18,10 +17,9 @@
 
     private async Task CallLogin()
     {
-        string message = await _networkService.Login(loginRequest, CancellationToken.None);
-        if (message == "yay")
-        {
-            await _localStorageService.SetItemAsync("authenticated", true);
+        bool loginSuccess = await _networkService.Login(loginRequest, CancellationToken.None);
+        if (loginSuccess)
+        {            
             // navigate to useful place
         }
     }

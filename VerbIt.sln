@@ -12,6 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repo-Level", "Repo-Level", "{BB05E33B-576A-48C1-AF74-4C9DB2D8E14C}"
 	ProjectSection(SolutionItems) = preProject
 		.gitattributes = .gitattributes
+		.csharpierrc.json = .csharpierrc.json
 		.gitignore = .gitignore
 	EndProjectSection
 EndProject
