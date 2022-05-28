@@ -22,19 +22,15 @@
 		</Content>
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="wwwroot\" />
-	</ItemGroup>
-
 	<!--Target to publish and copy the Blazor WASM app-->
-	<Target Name="_CompileAndPublishClient" BeforeTargets="BeforeBuild">
+	<Target Name="_CompileAndPublishClient" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Debug'">
 		<Exec Command="
 			  dotnet publish ../VerbIt.Client -o ./
 			  "/>
 	</Target>
 
 	<!--Tweaks to the SDK-style project system that will make it look at the client to determine up-to-date-ness-->
-	<ItemGroup >
+	<ItemGroup Condition="'$(Configuration)' == 'Debug'">
 		<UpToDateCheckInput Include="../VerbIt.Client/**/*.*" Exclude="*.dll;**/bin/**/*.*;**/obj/**/*.*" />
 		<UpToDateCheckInput Include="web.config" />
 	</ItemGroup>
