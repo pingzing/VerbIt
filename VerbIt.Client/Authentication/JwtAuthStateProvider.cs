@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Components.Authorization;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using VerbIt.Client.Services;
-using VerbIt.DataModels;
-using System.IdentityModel.Tokens.Jwt;
 
 namespace VerbIt.Client.Authentication;
 
@@ -32,9 +30,11 @@ public class JwtAuthStateProvider : AuthenticationStateProvider
         }
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", jwt);
 
-        return new AuthenticationState(
+        var authState = new AuthenticationState(
             new ClaimsPrincipal(new ClaimsIdentity(JwtParser.ParseClaims(jwt), "jwtAuthType"))
         );
+
+        return authState;
     }
 
     public void NotifyUserAuthentication(string jwt)

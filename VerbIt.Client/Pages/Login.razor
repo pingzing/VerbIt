@@ -1,26 +1,15 @@
 ﻿@page "/login"
-@inject INetworkService _networkService;
-@inject NavigationManager _navigationManager;
 
 <h3>Login</h3>
 
-<label for="usernameInput">Username</label>
-<input id="usernameInput" @bind="loginRequest.Username" type="text" class="border-solid"/>
+<div>
+    <label for="usernameInput">Username</label>
+    <input id="usernameInput" @bind="loginRequest.Username" type="text" class="border-solid"/>
+</div>
 
-<label for="passwordInput">Password</label>
-<input id="passwordInput" @bind="loginRequest.Password" type="password"/>
+<div>
+    <label for="passwordInput">Password</label>
+    <input id="passwordInput" @bind="loginRequest.Password" type="password"/>
+</div>
 
-<button type="button" @onclick="CallLogin">Login</button>
-
-@code {
-    private LoginRequest loginRequest = new LoginRequest();
-
-    private async Task CallLogin()
-    {
-        bool loginSuccess = await _networkService.Login(loginRequest, CancellationToken.None);
-        if (loginSuccess)
-        {            
-            // navigate to useful place
-        }
-    }
-}
+<button class="btn-main" type="button" @onclick="CallLogin">Login</button>

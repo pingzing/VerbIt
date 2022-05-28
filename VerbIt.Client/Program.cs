@@ -18,8 +18,9 @@ builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<INetworkService, NetworkService>();
-builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
-
 builder.Services.AddScoped<JwtAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(
+    provider => provider.GetRequiredService<JwtAuthStateProvider>()
+);
 
 await builder.Build().RunAsync();

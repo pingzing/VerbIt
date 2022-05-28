@@ -1,28 +1,30 @@
-﻿<div>
+﻿@inject INetworkService NetworkService;
+@inject NavigationManager NavigationManager;
+
+<div>
     <nav>
         <div>
             <NavLink href="/" Match="NavLinkMatch.All">
                 <span aria-hidden="true"></span> Home
             </NavLink>
         </div>
-        <div>
+        <div class="flex">
             <NavLink href="login">
                 <span aria-hidden="true"></span> Login
             </NavLink>
-        </div>
-        <div>
-            <NavLink href="counter">
-                <span aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div>
-            <NavLink href="fetchdata">
-                <span aria-hidden="true"></span> Fetch data
-            </NavLink>
+            <AuthorizeView>
+                <Authorized>
+                    <button class="btn-main" @onclick="CallLogout">Log out</button>
+                </Authorized>
+            </AuthorizeView>
         </div>
     </nav>
 </div>
 
 @code {
-
+    public async Task CallLogout()
+    {
+        await NetworkService.Logout();
+        NavigationManager.NavigateTo("/");
+    }
 }

@@ -59,13 +59,4 @@ public class AuthController : ControllerBase
 
         return token;
     }
-
-    [HttpPost]
-    [Authorize]
-    [Route("logout")]
-    public async Task<IActionResult> Logout()
-    {
-        await HttpContext.SignOutAsync();
-        return Ok();
-    }
 }
