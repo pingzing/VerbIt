@@ -4,6 +4,7 @@ using System.Text;
 using VerbIt.Backend.Models;
 using VerbIt.Backend.Repositories;
 using VerbIt.Backend.Services;
+using Microsoft.Extensions.Azure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,8 +44,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Local services
-builder.Services.AddTransient<IVerbitRepository, VerbitRepository>();
-builder.Services.AddTransient<IVerbitAuthService, VerbitAuthService>();
+builder.Services.AddSingleton<IVerbitRepository, VerbitRepository>();
+builder.Services.AddSingleton<IVerbitAuthService, VerbitAuthService>();
+builder.Services.AddAzureClients(clientBuilder =>
+{
+    TableStorageSettings tableOptions = builder.Configuration
+        .GetSection(TableStorageSettings.ConfigKey)
+        .Get<TableStorageSettings>();
+
+    clientBuilder.AddTableServiceClient(tableOptions.ConnectionString);
+});
 
 var app = builder.Build();
 
