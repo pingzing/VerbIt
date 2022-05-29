@@ -18,11 +18,18 @@ public partial class Login : ComponentBase
     public string? EscapedOriginalUrl { get; set; }
 
     // Data-bound against UI input
-    private LoginRequest loginRequest = new LoginRequest();
+    private string? _username;
+    private string? _password;
 
     private async Task CallLogin()
     {
-        bool loginSuccess = await NetworkService.Login(loginRequest, CancellationToken.None);
+        if (_username == null || _password == null)
+        {
+            // Display error
+            return;
+        }
+
+        bool loginSuccess = await NetworkService.Login(new LoginRequest(_username, _password), CancellationToken.None);
         if (!loginSuccess)
         {
             // TODO: Display error

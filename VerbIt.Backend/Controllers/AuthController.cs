@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -28,9 +25,9 @@ public class AuthController : ControllerBase
 
     [HttpPost]
     [Route("login")]
-    public async Task<ActionResult<string>> Login(LoginRequest request)
+    public async Task<ActionResult<string>> Login(LoginRequest request, CancellationToken token)
     {
-        AuthenticatedUser? result = await _verbitAuthService.Login(request.Username, request.Password);
+        AuthenticatedUser? result = await _verbitAuthService.Login(request.Username, request.Password, token);
         if (result == null)
         {
             return BadRequest();
@@ -43,8 +40,8 @@ public class AuthController : ControllerBase
 
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, result.Id.ToString("N")),
-            new Claim(JwtRegisteredClaimNames.Name, result.Name),
+            new Claim(JwtRegisteredClaimNames.Sub, result.Name),
+            new Claim(JwtRegisteredClaimNames.Aud, _jwtSettings.Audience),
             new Claim(ClaimTypes.Role, result.Role),
         };
 
@@ -55,8 +52,8 @@ public class AuthController : ControllerBase
             signingCredentials: credentials
         );
 
-        var token = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
+        var jwtToken = new JwtSecurityTokenHandler().WriteToken(tokenOptions);
 
-        return token;
+        return jwtToken;
     }
 }

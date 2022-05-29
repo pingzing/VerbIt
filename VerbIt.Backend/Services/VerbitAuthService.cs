@@ -12,13 +12,13 @@ public class VerbitAuthService : IVerbitAuthService
         _verbitRepository = verbitRepository;
     }
 
-    public async Task<AuthenticatedUser?> Login(string username, string password)
+    public async Task<AuthenticatedUser?> Login(string username, string password, CancellationToken token)
     {
-        return await _verbitRepository.AuthenticateUser(username, password);
+        return await _verbitRepository.AuthenticateUser(username, password, token);
     }
 }
 
 public interface IVerbitAuthService
 {
-    Task<AuthenticatedUser?> Login(string username, string password);
+    Task<AuthenticatedUser?> Login(string username, string password, CancellationToken token);
 }

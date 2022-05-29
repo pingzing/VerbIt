@@ -1,3 +1,5 @@
 ﻿namespace VerbIt.DataModels;
 
-public record struct LoginRequest(string Username, string Password);
+public record LoginRequest(string Username, string Password);
+
+public record CreateAdminUserRequest(string Username, string Password);

@@ -4,12 +4,12 @@
 
 <div>
     <label for="usernameInput">Username</label>
-    <input id="usernameInput" @bind="loginRequest.Username" type="text" class="border-solid"/>
+    <input id="usernameInput" @bind="_username" type="text" class="border-solid"/>
 </div>
 
 <div>
     <label for="passwordInput">Password</label>
-    <input id="passwordInput" @bind="loginRequest.Password" type="password"/>
+    <input id="passwordInput" @bind="_password" type="password"/>
 </div>
 
 <button class="btn-main" type="button" @onclick="CallLogin">Login</button>
