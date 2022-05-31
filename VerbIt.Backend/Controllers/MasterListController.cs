@@ -23,10 +23,39 @@ namespace VerbIt.Backend.Controllers
         [Route("create")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Create(MasterList newList, CancellationToken token)
+        public async Task<ActionResult<MasterListRow[]>> Create(MasterListRow[] newList, CancellationToken token)
         {
-            await _repository.CreateMasterList(newList, token);
+            string listName = newList[0].Name;
+            if (!newList.All(x => x.Name == listName))
+            {
+                return BadRequest("All rows in the list must have the same list name.");
+            }
+
+            if (newList.DistinctBy(x => x.Number).Count() != newList.Length)
+            {
+                return BadRequest("All rows in the list must have unique row numbers.");
+            }
+
+            return await _repository.CreateMasterList(newList, token);
+        }
+
+        [HttpPut]
+        [Route("edit")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> Edit(EditMasterListRequest editRequest, CancellationToken token)
+        {
+            await _repository.EditMasterList(editRequest, token);
             return Ok();
+        }
+
+        [HttpGet]
+        [Route("{masterListName}")]
+        public async Task<ActionResult<MasterListRow[]>> Get(string masterListName, CancellationToken token)
+        {
+            throw new NotImplementedException();
+            //return await _repository.GetMasterList(masterListName, token);
         }
     }
 }

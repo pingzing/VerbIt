@@ -1,6 +1,8 @@
 ﻿using Azure;
 using Azure.Data.Tables;
 using Isopoh.Cryptography.Argon2;
+using System.Globalization;
+using System.Text.Json;
 using VerbIt.Backend.Entities;
 using VerbIt.DataModels;
 
@@ -33,29 +35,131 @@ public class VerbitRepository : IVerbitRepository
 
     public async Task<AuthenticatedUser?> AuthenticateUser(string username, string password, CancellationToken token)
     {
-        // TODO: Actually hit a database and validate this info
-        await Task.Delay(1);
-        return new AuthenticatedUser("User", VerbitRoles.Admin);
+        TableClient tableClient = _tableServiceClient.GetTableClient(AdminUserTableName);
+
+        try
+        {
+            Response<AdminUserEntity> response = await tableClient.GetEntityAsync<AdminUserEntity>(
+                AdminUserEntity.DefaultPartitionKey,
+                username,
+                cancellationToken: token
+            );
+
+            if (!Argon2.Verify(response.Value.HashedPassword, password))
+            {
+                throw new StatusCodeException(StatusCodes.Status404NotFound, "No user with that username or password found");
+            }
+
+            return new AuthenticatedUser(response.Value.Name, VerbitRoles.Admin);
+        }
+        catch (RequestFailedException ex)
+        {
+            if (ex.Status == StatusCodes.Status404NotFound)
+            {
+                throw new StatusCodeException(StatusCodes.Status404NotFound, "No user with that username or password found", ex);
+            }
+
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, "Internal server error", ex);
+        }
     }
 
     // --- Master Lists ---
 
-    public async Task CreateMasterList(MasterList newList, CancellationToken token)
+    public async Task<MasterListRow[]> CreateMasterList(MasterListRow[] newList, CancellationToken token)
     {
         TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
-        MasterListEntity newListEntity = MasterListEntity.FromDTO(newList);
         try
         {
-            await tableClient.AddEntityAsync(newListEntity, token);
+            IEnumerable<TableTransactionAction> addEntitiesBatch = newList.Select(
+                x => new TableTransactionAction(TableTransactionActionType.Add, MasterListRowEntity.FromDTO(x))
+            );
+
+            Response<IReadOnlyList<Response>> response = await tableClient.SubmitTransactionAsync(addEntitiesBatch, token);
+
+            // Get updated entities, as there's no way to set Prefer: return-content on a batch insert yet
+            List<MasterListRow> newRows = new();
+            await foreach (
+                MasterListRowEntity newEntity in tableClient.QueryAsync<MasterListRowEntity>(
+                    x => x.PartitionKey == newList[0].Name,
+                    cancellationToken: token
+                )
+            )
+            {
+                newRows.Add(newEntity.AsDTO());
+            }
+
+            return newRows.ToArray();
         }
-        catch (Exception ex) when (ex is RequestFailedException rfEx)
+        catch (Exception ex)
         {
-            _logger.LogError($"Failed to insert Master List with name {newList.Number} into MasterList table.");
+            if (ex is TableTransactionFailedException ttfEx)
+            {
+                string errorFragment = "";
+                if (ttfEx.FailedTransactionActionIndex != null)
+                {
+                    errorFragment =
+                        $" Object at index: {JsonSerializer.Serialize(newList[ttfEx.FailedTransactionActionIndex.Value])}";
+                }
+                _logger.LogError(
+                    $"Transaciton failed when creating new table at index: {ttfEx.FailedTransactionActionIndex}.{errorFragment}"
+                );
+
+                // TODO: Investigate what kind of errors we catch here.
+                throw new StatusCodeException(StatusCodes.Status400BadRequest);
+            }
+
             throw new StatusCodeException(
                 StatusCodes.Status500InternalServerError,
-                $"Table Storage failed to insert. HTTP code: {rfEx.Status}, message: {rfEx.Message}",
-                rfEx
+                $"Failed to insert Master List with name {newList[0].Name} into MasterList table.",
+                ex
             );
+        }
+    }
+
+    public async Task EditMasterList(EditMasterListRequest editedList, CancellationToken token)
+    {
+        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        try
+        {
+            IEnumerable<TableTransactionAction> batch = editedList.ChangedRows.Select(
+                x =>
+                    x switch
+                    {
+                        MasterListRowDeleteRequest req
+                            => new TableTransactionAction(
+                                TableTransactionActionType.Delete,
+                                DeleteMasterListRowEntity.FromDTO(req, editedList.ListName)
+                            ),
+                        MasterListRowEditRequest req
+                            => new TableTransactionAction(
+                                TableTransactionActionType.UpdateMerge,
+                                EditMasterListRowEntity.FromDTO(req, editedList.ListName)
+                            ),
+                        _ => throw new StatusCodeException(StatusCodes.Status400BadRequest)
+                    }
+            );
+
+            await tableClient.SubmitTransactionAsync(batch, token);
+        }
+        catch (Exception ex)
+        {
+            if (ex is TableTransactionFailedException ttfEx)
+            {
+                string errorFragment = "";
+                if (ttfEx.FailedTransactionActionIndex != null)
+                {
+                    errorFragment =
+                        $" Object at index: {JsonSerializer.Serialize(editedList.ChangedRows[ttfEx.FailedTransactionActionIndex.Value])}";
+                }
+                _logger.LogError(
+                    $"Transaction failed when creating new table at index: {ttfEx.FailedTransactionActionIndex}.{errorFragment}"
+                );
+
+                // TODO: Investigate what kind of errors we catch here.
+                throw new StatusCodeException(StatusCodes.Status400BadRequest);
+            }
+
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, $"Failed to edit Master List", ex);
         }
     }
 
@@ -85,22 +189,14 @@ public class VerbitRepository : IVerbitRepository
 
             return new AuthenticatedUser(username, VerbitRoles.Admin);
         }
-        catch (Exception ex) when (ex is RequestFailedException rfEx)
+        catch (RequestFailedException ex)
         {
-            _logger.LogError(
-                "Failed to insert Admin User with name {Username} into AdminUser table. Details: {ExceptionMessage}",
-                userEntity.Name,
-                rfEx.Message
-            );
+            if (ex.Status == StatusCodes.Status409Conflict)
+            {
+                throw new StatusCodeException(StatusCodes.Status400BadRequest, "Invalid request", ex);
+            }
 
-            if (rfEx.Status == StatusCodes.Status409Conflict)
-            {
-                throw new StatusCodeException(StatusCodes.Status400BadRequest);
-            }
-            else
-            {
-                throw new StatusCodeException(StatusCodes.Status500InternalServerError);
-            }
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, "Internal server error", ex);
         }
     }
 
@@ -118,21 +214,15 @@ public class VerbitRepository : IVerbitRepository
 
             return new AuthenticatedUser(result.Value.Name, VerbitRoles.Admin);
         }
-        catch (Exception ex) when (ex is RequestFailedException rfEx)
+        catch (RequestFailedException ex)
         {
-            _logger.LogError(
-                "Failed to get admin user with name {Username}. Details: {ExceptionMessage}",
-                username,
-                rfEx.Message
-            );
-
-            if (rfEx.Status == StatusCodes.Status404NotFound)
+            if (ex.Status == StatusCodes.Status404NotFound)
             {
-                throw new StatusCodeException(StatusCodes.Status404NotFound);
+                throw new StatusCodeException(StatusCodes.Status404NotFound, "No user with that name found", ex);
             }
             else
             {
-                throw new StatusCodeException(StatusCodes.Status500InternalServerError);
+                throw new StatusCodeException(StatusCodes.Status500InternalServerError, "Internal server error", ex);
             }
         }
     }
@@ -144,7 +234,8 @@ public interface IVerbitRepository
     Task<AuthenticatedUser?> AuthenticateUser(string username, string password, CancellationToken token);
 
     // Master lists
-    Task CreateMasterList(MasterList newList, CancellationToken token);
+    Task<MasterListRow[]> CreateMasterList(MasterListRow[] newList, CancellationToken token);
+    Task EditMasterList(EditMasterListRequest editedList, CancellationToken token);
 
     // Admin users
     Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token);

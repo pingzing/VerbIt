@@ -7,7 +7,7 @@ using VerbIt.DataModels;
 
 namespace VerbIt.Backend.Entities
 {
-    public record class MasterListEntity : ITableEntity
+    public class MasterListRowEntity : ITableEntity
     {
         /// <summary>
         /// The Master List's name. Has a convenience property at <see cref="Name"/>.
@@ -43,20 +43,55 @@ namespace VerbIt.Backend.Entities
 
         public string WordsJson { get; set; } = null!;
 
-        public MasterList AsDTO()
+        public MasterListRow AsDTO()
         {
             string[][] deserializedWordList = JsonSerializer.Deserialize<string[][]>(WordsJson)!;
-            return new MasterList(Name, Number, deserializedWordList);
+            return new MasterListRow(Name, Number, deserializedWordList);
         }
 
-        public static MasterListEntity FromDTO(MasterList dto)
+        public static MasterListRowEntity FromDTO(MasterListRow dto)
         {
-            var serializedWordList = JsonSerializer.Serialize(dto.Words);
-            return new MasterListEntity
+            return new MasterListRowEntity
             {
                 Name = dto.Name,
                 Number = dto.Number,
-                WordsJson = serializedWordList,
+                WordsJson = JsonSerializer.Serialize(dto.Words)
+            };
+        }
+    }
+
+    public class EditMasterListRowEntity : ITableEntity
+    {
+        public string PartitionKey { get; set; } = null!;
+        public string RowKey { get; set; } = null!;
+        public string WordsJson { get; set; } = null!;
+        public DateTimeOffset? Timestamp { get; set; }
+        public ETag ETag { get; set; }
+
+        public static EditMasterListRowEntity FromDTO(MasterListRowEditRequest request, string tableName)
+        {
+            return new EditMasterListRowEntity
+            {
+                PartitionKey = tableName,
+                RowKey = request.Number.ToString(CultureInfo.InvariantCulture),
+                WordsJson = JsonSerializer.Serialize(request.Words)
+            };
+        }
+    }
+
+    public class DeleteMasterListRowEntity : ITableEntity
+    {
+        public string PartitionKey { get; set; } = null!;
+        public string RowKey { get; set; } = null!;
+        public DateTimeOffset? Timestamp { get; set; }
+        public ETag ETag { get; set; }
+
+        public static DeleteMasterListRowEntity FromDTO(MasterListRowDeleteRequest request, string tableName)
+        {
+            return new DeleteMasterListRowEntity
+            {
+                PartitionKey = tableName,
+                RowKey = request.Number.ToString(CultureInfo.InvariantCulture),
             };
         }
     }

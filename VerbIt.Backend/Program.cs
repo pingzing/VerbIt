@@ -8,8 +8,8 @@ using Microsoft.Extensions.Azure;
 using Microsoft.AspNetCore.Diagnostics;
 using VerbIt.Backend;
 using Microsoft.OpenApi.Models;
-using Azure.Data.Tables;
-using Azure.Core.Pipeline;
+using System.Text.Json.Serialization;
+using VerbIt.Backend.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,7 +41,13 @@ builder.Services
     });
 
 // MVC and Blazor
-builder.Services.AddControllersWithViews();
+builder.Services
+    .AddControllersWithViews()
+    .AddJsonOptions(opts =>
+    {
+        opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        opts.JsonSerializerOptions.Converters.Add(new MasterListRowUpdateRequestDeserializer());
+    });
 builder.Services.AddRazorPages();
 
 // Swagger

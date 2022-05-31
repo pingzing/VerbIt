@@ -8,6 +8,5 @@ namespace VerbIt.Backend.Repositories;
 /// </summary>
 public class PreferReturnContentPolicy : HttpPipelineSynchronousPolicy
 {
-    public override void OnSendingRequest(HttpMessage message) =>
-        message.Request.Headers.Add("Prefer", "return-content");
+    public override void OnSendingRequest(HttpMessage message) => message.Request.Headers.Add("Prefer", "return-content");
 }

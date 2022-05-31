@@ -1,5 +1,5 @@
-﻿namespace VerbIt.DataModels;
+﻿using System.ComponentModel.DataAnnotations;
 
-public record AuthenticatedUser(string Name, string Role);
+namespace VerbIt.DataModels;
 
-public record MasterList(string Name, int Number, string[][] Words);
+public record MasterListRow([Required] string Name, [Required] int Number, [Required] [MinLength(1)] string[][] Words);
