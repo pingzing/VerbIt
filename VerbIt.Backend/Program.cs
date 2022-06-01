@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Diagnostics;
 using VerbIt.Backend;
 using Microsoft.OpenApi.Models;
 using System.Text.Json.Serialization;
-using VerbIt.Backend.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +45,7 @@ builder.Services
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        opts.JsonSerializerOptions.Converters.Add(new MasterListRowUpdateRequestDeserializer());
+        //opts.JsonSerializerOptions.Converters.Add(new MasterListRowUpdateRequestDeserializer());
     });
 builder.Services.AddRazorPages();
 
@@ -101,6 +100,7 @@ builder.Services.AddAzureClients(clientBuilder =>
 // Local services
 builder.Services.AddSingleton<IVerbitAuthService, VerbitAuthService>();
 builder.Services.AddSingleton<IVerbitRepository, VerbitRepository>();
+builder.Services.AddSingleton<IMasterListService, MasterListService>();
 
 var app = builder.Build();
 

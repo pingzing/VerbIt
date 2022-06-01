@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace VerbIt.DataModels;
 
@@ -7,22 +6,22 @@ public record LoginRequest([Required] string Username, [Required] string Passwor
 
 public record CreateAdminUserRequest([Required] string Username, [Required] string Password);
 
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum MasterListRowUpdateAction
-{
-    Delete,
-    Edit
-};
+// --- Master List ---
 
-public record MasterListRowUpdateRequest([Range(0, int.MaxValue)] int Number, MasterListRowUpdateAction UpdateAction);
+public record CreateMasterListRequest([Required] string Name, [Required] [MinLength(1)] CreateMasterListRowRequest[] Rows);
 
-public record MasterListRowDeleteRequest([Range(0, int.MaxValue)] int Number)
-    : MasterListRowUpdateRequest(Number, MasterListRowUpdateAction.Delete);
+public record CreateMasterListRowRequest([Required] [MinLength(1)] string[][] Words);
 
-public record MasterListRowEditRequest([Range(0, int.MaxValue)] int Number, [Required] [MinLength(1)] string[][] Words)
-    : MasterListRowUpdateRequest(Number, MasterListRowUpdateAction.Edit);
+public record DeleteMasterListRowsRequest([Required] Guid ListId, [Required] [MinLength(1)] Guid[] RowIds);
 
 public record EditMasterListRequest(
-    [Required] string ListName,
-    [Required] [MinLength(1)] MasterListRowUpdateRequest[] ChangedRows
+    [Required] Guid ListId,
+    string? ListName,
+    [Required] [MinLength(1)] EditMasterListRowRequest[] Rows
+);
+
+public record EditMasterListRowRequest(
+    [Required] Guid RowId,
+    [Range(1, int.MaxValue)] int? RowNum,
+    [MinLength(1)] string[][]? Words
 );
