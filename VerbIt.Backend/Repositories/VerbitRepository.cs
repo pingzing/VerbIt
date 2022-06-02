@@ -155,10 +155,10 @@ public class VerbitRepository : IVerbitRepository
         }
     }
 
-    public async Task<MasterListRow[]> DeleteMasterListRows(
-        DeleteMasterListRowsRequest deleteRowRequest,
-        CancellationToken token
-    ) { }
+    public async Task<MasterListRow[]> DeleteMasterListRows(DeleteMasterListRowsRequest deleteRowRequest, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
 
     public async Task EditMasterList(EditMasterListRequest editedList, Guid[]? rowIdsToUpdateName, CancellationToken token)
     {
@@ -291,7 +291,7 @@ public interface IVerbitRepository
     Task<MasterListRow[]> CreateMasterList(CreateMasterListRequest createRequest, CancellationToken token);
     Task<MasterListRow[]> GetMasterList(Guid listId, CancellationToken token);
     Task EditMasterList(EditMasterListRequest editedList, Guid[]? rowIdsToUpdateName, CancellationToken token);
-    Task<MasterListRow[]> DeleteRows(DeleteMasterListRowsRequest deleteRowsRequest, CancellationToken token);
+    Task<MasterListRow[]> DeleteMasterListRows(DeleteMasterListRowsRequest deleteRowsRequest, CancellationToken token);
 
     // Admin users
     Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token);

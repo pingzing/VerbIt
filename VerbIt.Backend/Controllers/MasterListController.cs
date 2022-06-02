@@ -45,6 +45,7 @@ namespace VerbIt.Backend.Controllers
         public async Task<IActionResult> DeleteRows(DeleteMasterListRowsRequest deleteRowsRequest, CancellationToken token)
         {
             _masterListService.DeleteRows(deleteRowsRequest, token);
+            throw new NotImplementedException();
         }
 
         [HttpPatch]

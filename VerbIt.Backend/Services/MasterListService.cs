@@ -1,4 +1,5 @@
-﻿using VerbIt.Backend.Repositories;
+﻿using VerbIt.Backend.Extensions;
+using VerbIt.Backend.Repositories;
 using VerbIt.DataModels;
 
 namespace VerbIt.Backend.Services
@@ -28,7 +29,19 @@ namespace VerbIt.Backend.Services
         {
             HashSet<Guid> toDeleteHashes = deleteRequest.RowIds.ToHashSet();
             MasterListRow[] existingList = await _repository.GetMasterList(deleteRequest.ListId, token);
-            existingList.Where(row => toDeleteHashes.Contains(row.RowId));
+            var contiguousGroups = existingList
+                .Where(row => toDeleteHashes.Contains(row.RowId))
+                .OrderBy(x => x.RowNum)
+                .GroupContiguousBy(x => x.RowNum);
+
+            // Iterate through contiguous sublists in reverse order
+            // For each one:
+            // - Get the index of their last element
+            // - Every element in the original list BEYOND that index will have its rownum decremented by the sublist's Count
+
+            // Then, take the existingList now that it's had all its rownums modified
+            // For each one, if its RowId exists in the list of ToDeletes, generate a DeleteAction
+            // Otherwise, generate an UpdateMerge action
         }
 
         public async Task<MasterListRow[]> EditMasterList(EditMasterListRequest editRequest, CancellationToken token)
