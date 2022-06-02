@@ -45,7 +45,6 @@ builder.Services
     .AddJsonOptions(opts =>
     {
         opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-        //opts.JsonSerializerOptions.Converters.Add(new MasterListRowUpdateRequestDeserializer());
     });
 builder.Services.AddRazorPages();
 

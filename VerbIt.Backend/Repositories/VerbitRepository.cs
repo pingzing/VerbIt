@@ -1,7 +1,6 @@
 ﻿using Azure;
 using Azure.Data.Tables;
 using Isopoh.Cryptography.Argon2;
-using System.Globalization;
 using System.Text.Json;
 using VerbIt.Backend.Entities;
 using VerbIt.DataModels;
@@ -11,6 +10,7 @@ namespace VerbIt.Backend.Repositories;
 public class VerbitRepository : IVerbitRepository
 {
     private const string MasterListTableName = "MasterList";
+    private const string SavedMasterListTableName = "SavedMasterLists";
     private const string AdminUserTableName = "AdminUsers";
 
     private readonly ILogger<VerbitRepository> _logger;
@@ -27,6 +27,7 @@ public class VerbitRepository : IVerbitRepository
             {
                 Task.Run(() => _tableServiceClient.CreateTableIfNotExists(MasterListTableName)),
                 Task.Run(() => _tableServiceClient.CreateTableIfNotExists(AdminUserTableName)),
+                Task.Run(() => _tableServiceClient.CreateTableIfNotExists(SavedMasterListTableName)),
             }
         );
     }
@@ -65,6 +66,31 @@ public class VerbitRepository : IVerbitRepository
 
     // --- Master Lists ---
 
+    public async Task<SavedMasterList[]> GetSavedMasterLists(CancellationToken token)
+    {
+        TableClient client = _tableServiceClient.GetTableClient(SavedMasterListTableName);
+        try
+        {
+            var getSavedMasterListsQuery = client.QueryAsync<SavedMasterListEntity>(
+                x => x.PartitionKey == SavedMasterListEntity.DefaultPartitionKey,
+                cancellationToken: token
+            );
+
+            List<SavedMasterListEntity> savedLists = new();
+            await foreach (SavedMasterListEntity savedMasterList in getSavedMasterListsQuery)
+            {
+                savedLists.Add(savedMasterList);
+            }
+
+            return savedLists.Select(x => x.AsDTO()).ToArray();
+        }
+        catch (RequestFailedException ex)
+        {
+            _logger.LogError(ex, $"Failed to get saved master lists.");
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, "Failed to get saved master lists.");
+        }
+    }
+
     public async Task<MasterListRow[]> GetMasterList(Guid listId, CancellationToken token)
     {
         TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
@@ -100,14 +126,14 @@ public class VerbitRepository : IVerbitRepository
             int rowNum = 1;
             DateTimeOffset listCreationTimestamp = DateTimeOffset.UtcNow;
             IEnumerable<TableTransactionAction> addEntitiesBatch = createRequest.Rows.Select(
-                x =>
+                createRowRequest =>
                     new TableTransactionAction(
                         TableTransactionActionType.Add,
                         MasterListRowEntity.FromCreateRequest(
                             listId,
                             createRequest.Name,
                             rowNum++,
-                            x.Words,
+                            createRowRequest.Words,
                             listCreationTimestamp
                         )
                     )
@@ -126,6 +152,19 @@ public class VerbitRepository : IVerbitRepository
             {
                 newRows.Add(newEntity.AsDTO());
             }
+
+            // Add a new entry to the "every list ID" tracker
+            await _tableServiceClient
+                .GetTableClient(SavedMasterListTableName)
+                .AddEntityAsync(
+                    new SavedMasterListEntity
+                    {
+                        PartitionKey = SavedMasterListEntity.DefaultPartitionKey,
+                        RowKey = listId.ToString(),
+                        ListName = createRequest.Name,
+                        ListCreationTimestamp = listCreationTimestamp,
+                    }
+                );
 
             return newRows.ToArray();
         }
@@ -155,37 +194,111 @@ public class VerbitRepository : IVerbitRepository
         }
     }
 
-    public async Task<MasterListRow[]> DeleteMasterListRows(DeleteMasterListRowsRequest deleteRowRequest, CancellationToken token)
+    // This both deletes rows, and performs fixups on all rows in the list to fix their rownums.
+    public async Task<MasterListRow[]> DeleteMasterListRows(
+        Guid listId,
+        MasterListRow[] listRows,
+        HashSet<Guid> rowsToDelete,
+        CancellationToken token
+    )
     {
-        throw new NotImplementedException();
+        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        try
+        {
+            IEnumerable<TableTransactionAction> transactionActions = listRows.Select(x =>
+            {
+                if (rowsToDelete.Contains(x.RowId))
+                {
+                    return new TableTransactionAction(
+                        TableTransactionActionType.Delete,
+                        new TableEntity(listId.ToString(), x.RowId.ToString())
+                    );
+                }
+                else
+                {
+                    return new TableTransactionAction(
+                        TableTransactionActionType.UpdateMerge,
+                        new TableEntity(listId.ToString(), x.RowId.ToString())
+                        {
+                            { nameof(MasterListRowEntity.RowNum), x.RowNum }
+                        }
+                    );
+                }
+            });
+
+            Response<IReadOnlyList<Response>> response = await tableClient.SubmitTransactionAsync(transactionActions, token);
+
+            // Get updated list, until we figure out a way to make transactions return resutls
+            return await GetMasterList(listId, token);
+        }
+        catch (RequestFailedException ex)
+        {
+            _logger.LogError(ex, "Failed to delete list rows. Investigate this further.");
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, "Failed to delete the given row IDs.");
+        }
     }
 
-    public async Task EditMasterList(EditMasterListRequest editedList, Guid[]? rowIdsToUpdateName, CancellationToken token)
+    public async Task DeleteMasterList(Guid listId, CancellationToken token)
+    {
+        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        try
+        {
+            MasterListRow[] existingList = await GetMasterList(listId, token);
+            var actions = existingList.Select(
+                x =>
+                    new TableTransactionAction(
+                        TableTransactionActionType.Delete,
+                        new TableEntity(listId.ToString(), x.RowId.ToString())
+                    )
+            );
+
+            await tableClient.SubmitTransactionAsync(actions, token);
+
+            await _tableServiceClient
+                .GetTableClient(SavedMasterListTableName)
+                .DeleteEntityAsync(SavedMasterListEntity.DefaultPartitionKey, listId.ToString(), cancellationToken: token);
+        }
+        catch (RequestFailedException ex)
+        {
+            _logger.LogError(ex, "Failed to delete list with ID of {listId}", listId.ToString());
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, $"Failed to delete Master List ID {listId}");
+        }
+    }
+
+    public async Task EditMasterList(
+        Guid listId,
+        EditMasterListRequest editedList,
+        Guid[]? rowIdsToUpdateName,
+        CancellationToken token
+    )
     {
         TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
         try
         {
             List<TableTransactionAction> actions = new List<TableTransactionAction>();
-            actions.AddRange(
-                editedList.Rows.Select(x =>
-                {
-                    var updateEntity = new TableEntity(editedList.ListId.ToString(), x.RowId.ToString());
-                    if (editedList.ListName != null)
+            if (editedList.Rows != null)
+            {
+                actions.AddRange(
+                    editedList.Rows.Select(editRowRequest =>
                     {
-                        updateEntity[nameof(MasterListRowEntity.ListName)] = editedList.ListName;
-                    }
-                    if (x.RowNum != null)
-                    {
-                        updateEntity[nameof(MasterListRowEntity.RowNum)] = x.RowNum;
-                    }
-                    if (x.Words != null)
-                    {
-                        updateEntity[nameof(MasterListRowEntity.WordsJson)] = JsonSerializer.Serialize(x.Words);
-                    }
+                        var updateEntity = new TableEntity(listId.ToString(), editRowRequest.RowId.ToString());
+                        if (editedList.ListName != null)
+                        {
+                            updateEntity[nameof(MasterListRowEntity.ListName)] = editedList.ListName;
+                        }
+                        if (editRowRequest.RowNum != null)
+                        {
+                            updateEntity[nameof(MasterListRowEntity.RowNum)] = editRowRequest.RowNum;
+                        }
+                        if (editRowRequest.Words != null)
+                        {
+                            updateEntity[nameof(MasterListRowEntity.WordsJson)] = JsonSerializer.Serialize(editRowRequest.Words);
+                        }
 
-                    return new TableTransactionAction(TableTransactionActionType.UpdateMerge, updateEntity);
-                })
-            );
+                        return new TableTransactionAction(TableTransactionActionType.UpdateMerge, updateEntity);
+                    })
+                );
+            }
 
             if (rowIdsToUpdateName != null)
             {
@@ -194,7 +307,7 @@ public class VerbitRepository : IVerbitRepository
                         rowId =>
                             new TableTransactionAction(
                                 TableTransactionActionType.UpdateMerge,
-                                new TableEntity(editedList.ListId.ToString(), rowId.ToString())
+                                new TableEntity(listId.ToString(), rowId.ToString())
                                 {
                                     { nameof(MasterListRowEntity.ListName), editedList.ListName },
                                 }
@@ -204,6 +317,11 @@ public class VerbitRepository : IVerbitRepository
             }
 
             Response<IReadOnlyList<Response>> response = await tableClient.SubmitTransactionAsync(actions, token);
+
+            if (editedList.ListName != null)
+            {
+                await UpdatedSavedMasterListName(listId, editedList.ListName, token);
+            }
         }
         catch (RequestFailedException ex)
         {
@@ -211,7 +329,52 @@ public class VerbitRepository : IVerbitRepository
 
             throw new StatusCodeException(
                 StatusCodes.Status500InternalServerError,
-                $"Failed to edit Master List with ID {editedList.ListId} into MasterList table.",
+                $"Failed to edit Master List with ID {listId} into MasterList table.",
+                ex
+            );
+        }
+    }
+
+    public async Task<MasterListRow[]> AddMasterListRows(Guid listId, AddMasterListRowsRequest request, CancellationToken token)
+    {
+        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        try
+        {
+            // Get the last existing row
+            List<MasterListRowEntity> existingList = new();
+            tableClient.QueryAsync<MasterListRowEntity>(
+                x => x.PartitionKey == listId.ToString(),
+                select: new[] { nameof(MasterListRowEntity.RowNum) }
+            );
+            MasterListRowEntity lastRow = existingList.MaxBy(x => x.RowNum)!;
+
+            int rowNum = lastRow.RowNum + 1;
+            IEnumerable<TableTransactionAction> actions = request.Rows.Select(
+                createRowRequest =>
+                    new TableTransactionAction(
+                        TableTransactionActionType.UpsertReplace,
+                        MasterListRowEntity.FromCreateRequest(
+                            listId,
+                            lastRow.ListName,
+                            rowNum++,
+                            createRowRequest.Words,
+                            lastRow.ListCreationTimestamp
+                        )
+                    )
+            );
+
+            var response = await tableClient.SubmitTransactionAsync(actions, token);
+
+            // Get updated list, until we figure out a way to make transactions return resutls
+            return await GetMasterList(listId, token);
+        }
+        catch (RequestFailedException ex)
+        {
+            // TODO: invetigate how we fail here.
+
+            throw new StatusCodeException(
+                StatusCodes.Status500InternalServerError,
+                $"Failed to add Master List rows to list with ID {listId}.",
                 ex
             );
         }
@@ -280,6 +443,23 @@ public class VerbitRepository : IVerbitRepository
             }
         }
     }
+
+    // Tucked away into its own little method, because the SDK has a bug where it throws
+    // if Perfer: return-content is set and we do a merge-update.
+    private async Task UpdatedSavedMasterListName(Guid listId, string newName, CancellationToken token)
+    {
+        var savedListclient = _tableServiceClient.GetTableClient(SavedMasterListTableName);
+        var entity = new TableEntity(SavedMasterListEntity.DefaultPartitionKey, listId.ToString())
+        {
+            { nameof(SavedMasterListEntity.ListName), newName }
+        };
+
+        try
+        {
+            await savedListclient.UpdateEntityAsync(entity, ETag.All, TableUpdateMode.Merge, cancellationToken: token);
+        }
+        catch (RequestFailedException ex) when (ex.Status == StatusCodes.Status200OK) { }
+    }
 }
 
 public interface IVerbitRepository
@@ -288,12 +468,34 @@ public interface IVerbitRepository
     Task<AuthenticatedUser?> AuthenticateUser(string username, string password, CancellationToken token);
 
     // Master lists
+
+    /// <summary>
+    /// Retrieves the IDs, names, and creation times of <em>all</em> master lists.
+    /// </summary>
+    Task<SavedMasterList[]> GetSavedMasterLists(CancellationToken token);
     Task<MasterListRow[]> CreateMasterList(CreateMasterListRequest createRequest, CancellationToken token);
     Task<MasterListRow[]> GetMasterList(Guid listId, CancellationToken token);
-    Task EditMasterList(EditMasterListRequest editedList, Guid[]? rowIdsToUpdateName, CancellationToken token);
-    Task<MasterListRow[]> DeleteMasterListRows(DeleteMasterListRowsRequest deleteRowsRequest, CancellationToken token);
+    Task EditMasterList(Guid listId, EditMasterListRequest editedList, Guid[]? rowIdsToUpdateName, CancellationToken token);
+
+    /// <summary>
+    /// Deletes the rows with the IDs in <paramref name="rowsToDelete"/>, and simultaneously updates
+    /// Row Nums based on those passed in via <paramref name="listRows"/>.
+    /// </summary>
+    /// <param name="listId">The ID of the list to delete rows from.</param>
+    /// <param name="listRows">All the rows whose RowNums need to be updated as a result of deletions.</param>
+    /// <param name="rowsToDelete">IDs of the rows to delete.</param>
+    /// <returns>The Master List rows, with deleted rows removed, and Row Nums updated.</returns>
+    Task<MasterListRow[]> DeleteMasterListRows(
+        Guid listId,
+        MasterListRow[] listRows,
+        HashSet<Guid> rowsToDelete,
+        CancellationToken token
+    );
+
+    Task DeleteMasterList(Guid listId, CancellationToken token);
 
     // Admin users
     Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token);
     Task<AuthenticatedUser> GetAdminUser(string username, CancellationToken token);
+    Task<MasterListRow[]> AddMasterListRows(Guid listId, AddMasterListRowsRequest request, CancellationToken token);
 }

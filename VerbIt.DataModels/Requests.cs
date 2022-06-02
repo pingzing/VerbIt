@@ -12,16 +12,14 @@ public record CreateMasterListRequest([Required] string Name, [Required] [MinLen
 
 public record CreateMasterListRowRequest([Required] [MinLength(1)] string[][] Words);
 
-public record DeleteMasterListRowsRequest([Required] Guid ListId, [Required] [MinLength(1)] Guid[] RowIds);
+public record DeleteMasterListRowsRequest([Required] [MinLength(1)] Guid[] RowIds);
 
-public record EditMasterListRequest(
-    [Required] Guid ListId,
-    string? ListName,
-    [Required] [MinLength(1)] EditMasterListRowRequest[] Rows
-);
+public record EditMasterListRequest(string? ListName, [MinLength(1)] EditMasterListRowRequest[]? Rows);
 
 public record EditMasterListRowRequest(
     [Required] Guid RowId,
     [Range(1, int.MaxValue)] int? RowNum,
     [MinLength(1)] string[][]? Words
 );
+
+public record AddMasterListRowsRequest([Required] [MinLength(1)] CreateMasterListRowRequest[] Rows);

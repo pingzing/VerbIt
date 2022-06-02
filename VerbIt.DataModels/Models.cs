@@ -12,3 +12,5 @@ public record MasterListRow(
     [Required] [MinLength(1)] string[][] Words,
     [Required] DateTimeOffset ListCreationTimestamp
 );
+
+public record SavedMasterList(Guid ListId, string ListName, DateTimeOffset ListCreationTimestamp);
