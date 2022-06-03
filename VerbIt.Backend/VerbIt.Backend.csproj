@@ -3,9 +3,17 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<UserSecretsId>9706a00e-71f4-49ec-99d4-f60f7295b9bf</UserSecretsId>
+		<ImplicitUsings>enable</ImplicitUsings>		
 	</PropertyGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="VerbIt.Backend.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\VerbIt.Client\VerbIt.Client.csproj" />
+		<ProjectReference Include="..\VerbIt.DataModels\VerbIt.DataModels.csproj" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Azure.Data.Tables" Version="12.5.0" />
@@ -14,10 +22,5 @@
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.5" />
 		<PackageReference Include="Microsoft.Extensions.Azure" Version="1.2.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\VerbIt.Client\VerbIt.Client.csproj" />
-		<ProjectReference Include="..\VerbIt.DataModels\VerbIt.DataModels.csproj" />
 	</ItemGroup>
 </Project>

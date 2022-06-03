@@ -1,8 +1,10 @@
 ﻿using Azure;
 using Azure.Data.Tables;
 using Isopoh.Cryptography.Argon2;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using VerbIt.Backend.Entities;
+using VerbIt.Backend.Models;
 using VerbIt.DataModels;
 
 namespace VerbIt.Backend.Repositories;
@@ -13,21 +15,27 @@ public class VerbitRepository : IVerbitRepository
     private const string SavedMasterListTableName = "SavedMasterLists";
     private const string AdminUserTableName = "AdminUsers";
 
+    private readonly string _tablePrefix = "";
     private readonly ILogger<VerbitRepository> _logger;
     private readonly TableServiceClient _tableServiceClient;
 
-    public VerbitRepository(TableServiceClient tableServiceClient, ILogger<VerbitRepository> logger)
+    public VerbitRepository(
+        TableServiceClient tableServiceClient,
+        ILogger<VerbitRepository> logger,
+        IOptions<TableStorageSettings> settings
+    )
     {
         _tableServiceClient = tableServiceClient;
         _logger = logger;
+        _tablePrefix = settings.Value.TablePrefix;
 
         // Create all the well-known tables that will need to exist.
         Task.WaitAll(
             new[]
             {
-                Task.Run(() => _tableServiceClient.CreateTableIfNotExists(MasterListTableName)),
-                Task.Run(() => _tableServiceClient.CreateTableIfNotExists(AdminUserTableName)),
-                Task.Run(() => _tableServiceClient.CreateTableIfNotExists(SavedMasterListTableName)),
+                Task.Run(() => _tableServiceClient.CreateTableIfNotExists($"{_tablePrefix}{MasterListTableName}")),
+                Task.Run(() => _tableServiceClient.CreateTableIfNotExists($"{_tablePrefix}{AdminUserTableName}")),
+                Task.Run(() => _tableServiceClient.CreateTableIfNotExists($"{_tablePrefix}{SavedMasterListTableName}")),
             }
         );
     }
@@ -36,7 +44,7 @@ public class VerbitRepository : IVerbitRepository
 
     public async Task<AuthenticatedUser?> AuthenticateUser(string username, string password, CancellationToken token)
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(AdminUserTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{AdminUserTableName}");
 
         try
         {
@@ -68,7 +76,7 @@ public class VerbitRepository : IVerbitRepository
 
     public async Task<SavedMasterList[]> GetSavedMasterLists(CancellationToken token)
     {
-        TableClient client = _tableServiceClient.GetTableClient(SavedMasterListTableName);
+        TableClient client = _tableServiceClient.GetTableClient($"{_tablePrefix}{SavedMasterListTableName}");
         try
         {
             var getSavedMasterListsQuery = client.QueryAsync<SavedMasterListEntity>(
@@ -93,7 +101,7 @@ public class VerbitRepository : IVerbitRepository
 
     public async Task<MasterListRow[]> GetMasterList(Guid listId, CancellationToken token)
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{MasterListTableName}");
         try
         {
             List<MasterListRowEntity> masterList = new();
@@ -119,16 +127,15 @@ public class VerbitRepository : IVerbitRepository
 
     public async Task<MasterListRow[]> CreateMasterList(CreateMasterListRequest createRequest, CancellationToken token)
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{MasterListTableName}");
         try
         {
             Guid listId = Guid.NewGuid();
             int rowNum = 1;
             DateTimeOffset listCreationTimestamp = DateTimeOffset.UtcNow;
-            IEnumerable<TableTransactionAction> addEntitiesBatch = createRequest.Rows.Select(
-                createRowRequest =>
-                    new TableTransactionAction(
-                        TableTransactionActionType.Add,
+            List<MasterListRowEntity> rowsToCreate = createRequest.Rows
+                .Select(
+                    createRowRequest =>
                         MasterListRowEntity.FromCreateRequest(
                             listId,
                             createRequest.Name,
@@ -136,26 +143,18 @@ public class VerbitRepository : IVerbitRepository
                             createRowRequest.Words,
                             listCreationTimestamp
                         )
-                    )
+                )
+                .ToList();
+
+            IEnumerable<TableTransactionAction> addEntitiesBatch = rowsToCreate.Select(
+                row => new TableTransactionAction(TableTransactionActionType.Add, row)
             );
 
-            Response<IReadOnlyList<Response>> response = await tableClient.SubmitTransactionAsync(addEntitiesBatch, token);
-
-            // Get updated entities, as there's no way to set Prefer: return-content on a batch insert yet
-            List<MasterListRow> newRows = new();
-            await foreach (
-                MasterListRowEntity newEntity in tableClient.QueryAsync<MasterListRowEntity>(
-                    x => x.PartitionKey == listId.ToString(),
-                    cancellationToken: token
-                )
-            )
-            {
-                newRows.Add(newEntity.AsDTO());
-            }
+            await tableClient.SubmitTransactionAsync(addEntitiesBatch, token);
 
             // Add a new entry to the "every list ID" tracker
             await _tableServiceClient
-                .GetTableClient(SavedMasterListTableName)
+                .GetTableClient($"{_tablePrefix}{SavedMasterListTableName}")
                 .AddEntityAsync(
                     new SavedMasterListEntity
                     {
@@ -166,7 +165,7 @@ public class VerbitRepository : IVerbitRepository
                     }
                 );
 
-            return newRows.ToArray();
+            return rowsToCreate.Select(x => x.AsDTO()).ToArray();
         }
         catch (Exception ex)
         {
@@ -197,12 +196,12 @@ public class VerbitRepository : IVerbitRepository
     // This both deletes rows, and performs fixups on all rows in the list to fix their rownums.
     public async Task<MasterListRow[]> DeleteMasterListRows(
         Guid listId,
-        MasterListRow[] listRows,
+        IEnumerable<MasterListRow> listRows,
         HashSet<Guid> rowsToDelete,
         CancellationToken token
     )
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{MasterListTableName}");
         try
         {
             IEnumerable<TableTransactionAction> transactionActions = listRows.Select(x =>
@@ -226,7 +225,7 @@ public class VerbitRepository : IVerbitRepository
                 }
             });
 
-            Response<IReadOnlyList<Response>> response = await tableClient.SubmitTransactionAsync(transactionActions, token);
+            await tableClient.SubmitTransactionAsync(transactionActions, token);
 
             // Get updated list, until we figure out a way to make transactions return resutls
             return await GetMasterList(listId, token);
@@ -240,7 +239,7 @@ public class VerbitRepository : IVerbitRepository
 
     public async Task DeleteMasterList(Guid listId, CancellationToken token)
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{MasterListTableName}");
         try
         {
             MasterListRow[] existingList = await GetMasterList(listId, token);
@@ -255,7 +254,7 @@ public class VerbitRepository : IVerbitRepository
             await tableClient.SubmitTransactionAsync(actions, token);
 
             await _tableServiceClient
-                .GetTableClient(SavedMasterListTableName)
+                .GetTableClient($"{_tablePrefix}{SavedMasterListTableName}")
                 .DeleteEntityAsync(SavedMasterListEntity.DefaultPartitionKey, listId.ToString(), cancellationToken: token);
         }
         catch (RequestFailedException ex)
@@ -272,7 +271,7 @@ public class VerbitRepository : IVerbitRepository
         CancellationToken token
     )
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{MasterListTableName}");
         try
         {
             List<TableTransactionAction> actions = new List<TableTransactionAction>();
@@ -316,7 +315,7 @@ public class VerbitRepository : IVerbitRepository
                 );
             }
 
-            Response<IReadOnlyList<Response>> response = await tableClient.SubmitTransactionAsync(actions, token);
+            await tableClient.SubmitTransactionAsync(actions, token);
 
             if (editedList.ListName != null)
             {
@@ -337,7 +336,7 @@ public class VerbitRepository : IVerbitRepository
 
     public async Task<MasterListRow[]> AddMasterListRows(Guid listId, AddMasterListRowsRequest request, CancellationToken token)
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(MasterListTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{MasterListTableName}");
         try
         {
             // Get the last existing row
@@ -363,9 +362,8 @@ public class VerbitRepository : IVerbitRepository
                     )
             );
 
-            var response = await tableClient.SubmitTransactionAsync(actions, token);
+            await tableClient.SubmitTransactionAsync(actions, token);
 
-            // Get updated list, until we figure out a way to make transactions return resutls
             return await GetMasterList(listId, token);
         }
         catch (RequestFailedException ex)
@@ -383,7 +381,7 @@ public class VerbitRepository : IVerbitRepository
     // --- Admin Users ---
     public async Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token)
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(AdminUserTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{AdminUserTableName}");
         AdminUserEntity userEntity = new AdminUserEntity
         {
             PartitionKey = AdminUserEntity.DefaultPartitionKey,
@@ -392,18 +390,7 @@ public class VerbitRepository : IVerbitRepository
         };
         try
         {
-            Response response = await tableClient.AddEntityAsync(userEntity, token);
-            AdminUserEntity addedEntity = response.Content.ToObjectFromJson<AdminUserEntity>();
-
-            // Probably don't really need this.
-            if (!Argon2.Verify(addedEntity.HashedPassword, password))
-            {
-                throw new StatusCodeException(
-                    StatusCodes.Status500InternalServerError,
-                    "Stored password hash did not match user-sent password"
-                );
-            }
-
+            await tableClient.AddEntityAsync(userEntity, token);
             return new AuthenticatedUser(username, VerbitRoles.Admin);
         }
         catch (RequestFailedException ex)
@@ -419,7 +406,7 @@ public class VerbitRepository : IVerbitRepository
 
     public async Task<AuthenticatedUser> GetAdminUser(string username, CancellationToken token)
     {
-        TableClient tableClient = _tableServiceClient.GetTableClient(AdminUserTableName);
+        TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{AdminUserTableName}");
 
         try
         {
@@ -445,10 +432,10 @@ public class VerbitRepository : IVerbitRepository
     }
 
     // Tucked away into its own little method, because the SDK has a bug where it throws
-    // if Perfer: return-content is set and we do a merge-update.
+    // if the 'Prefer: return-content' header is set and we do a merge-update.
     private async Task UpdatedSavedMasterListName(Guid listId, string newName, CancellationToken token)
     {
-        var savedListclient = _tableServiceClient.GetTableClient(SavedMasterListTableName);
+        var savedListclient = _tableServiceClient.GetTableClient($"{_tablePrefix}{SavedMasterListTableName}");
         var entity = new TableEntity(SavedMasterListEntity.DefaultPartitionKey, listId.ToString())
         {
             { nameof(SavedMasterListEntity.ListName), newName }
@@ -458,6 +445,7 @@ public class VerbitRepository : IVerbitRepository
         {
             await savedListclient.UpdateEntityAsync(entity, ETag.All, TableUpdateMode.Merge, cancellationToken: token);
         }
+        // Swallow 200s because guess what they mean it _worked_
         catch (RequestFailedException ex) when (ex.Status == StatusCodes.Status200OK) { }
     }
 }
@@ -487,7 +475,7 @@ public interface IVerbitRepository
     /// <returns>The Master List rows, with deleted rows removed, and Row Nums updated.</returns>
     Task<MasterListRow[]> DeleteMasterListRows(
         Guid listId,
-        MasterListRow[] listRows,
+        IEnumerable<MasterListRow> listRows,
         HashSet<Guid> rowsToDelete,
         CancellationToken token
     );

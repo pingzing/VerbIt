@@ -14,9 +14,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // -- ConfigureServices --
 
+// Options
 IConfigurationSection? jwtConfigSection = builder.Configuration.GetSection(JwtSettings.Key);
 builder.Services.AddOptions<JwtSettings>().Bind(jwtConfigSection);
-JwtSettings jwtSettings = jwtConfigSection.Get<JwtSettings>();
+builder.Services
+    .AddOptions<TableStorageSettings>()
+    .Bind(builder.Configuration.GetRequiredSection(TableStorageSettings.ConfigKey));
 
 // Auth
 builder.Services
@@ -27,6 +30,7 @@ builder.Services
     })
     .AddJwtBearer(opts =>
     {
+        JwtSettings jwtSettings = jwtConfigSection.Get<JwtSettings>();
         opts.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -86,14 +90,7 @@ builder.Services.AddAzureClients(clientBuilder =>
         .GetSection(TableStorageSettings.ConfigKey)
         .Get<TableStorageSettings>();
 
-    clientBuilder
-        .AddTableServiceClient(tableOptions.ConnectionString)
-        .ConfigureOptions(opts =>
-        {
-            // Add a policy that adds the "Prefer: return-content" header so that we
-            // get inserted entities back in the response.
-            opts.AddPolicy(new PreferReturnContentPolicy(), Azure.Core.HttpPipelinePosition.PerRetry);
-        });
+    clientBuilder.AddTableServiceClient(tableOptions.ConnectionString);
 });
 
 // Local services

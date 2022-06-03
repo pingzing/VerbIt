@@ -52,7 +52,7 @@ namespace VerbIt.Backend.Controllers
             return await _masterListService.CreateList(createRequest, token);
         }
 
-        [HttpDelete]
+        [HttpPost]
         [Route("{listId}/deleterows")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MasterListRow[]))]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]

@@ -30,18 +30,16 @@ namespace VerbIt.Backend.Services
             return _repository.CreateMasterList(createRequest, token);
         }
 
-        // TODO: List with two items, deleted item 1, didn't see row adjustments. Fix this.
-
         public async Task<MasterListRow[]> DeleteRows(
             Guid listId,
             DeleteMasterListRowsRequest deleteRequest,
             CancellationToken token
         )
         {
-            MasterListRow[] existingList = await _repository.GetMasterList(listId, token);
+            List<MasterListRow> existingList = (await _repository.GetMasterList(listId, token)).OrderBy(x => x.RowNum).ToList();
 
             if (
-                deleteRequest.RowIds.Length == existingList.Length
+                deleteRequest.RowIds.Length == existingList.Count
                 && deleteRequest.RowIds.All(existingList.Select(x => x.RowId).Contains)
             )
             {
@@ -51,10 +49,7 @@ namespace VerbIt.Backend.Services
             }
 
             HashSet<Guid> toDeleteHashes = deleteRequest.RowIds.ToHashSet();
-            var contiguousGroups = existingList
-                .Where(row => toDeleteHashes.Contains(row.RowId))
-                .OrderBy(x => x.RowNum)
-                .GroupContiguousBy(x => x.RowNum);
+            var contiguousGroups = existingList.Where(row => toDeleteHashes.Contains(row.RowId)).GroupContiguousBy(x => x.RowNum);
 
             // Iterate through contiguous sublists in reverse order
             // For each one:
@@ -63,14 +58,14 @@ namespace VerbIt.Backend.Services
             foreach (var deleteGroup in contiguousGroups.Reverse())
             {
                 List<MasterListRow> realizedDeleteGroup = deleteGroup.ToList();
-                int indexOfLast = Array.IndexOf(existingList, realizedDeleteGroup.Last());
-                if (indexOfLast == existingList.Length - 1)
+                int indexOfLast = existingList.IndexOf(realizedDeleteGroup.Last());
+                if (indexOfLast == existingList.Count - 1)
                 {
                     // This deleteGroup contains the last element in the list. Nothing beyond to adjust.
                     continue;
                 }
 
-                for (int i = indexOfLast + 1; i < existingList.Length; i++)
+                for (int i = indexOfLast + 1; i < existingList.Count; i++)
                 {
                     MasterListRow rowToAdjust = existingList[i];
                     existingList[i] = rowToAdjust with { RowNum = rowToAdjust.RowNum - realizedDeleteGroup.Count };
