@@ -1,9 +1,11 @@
 ﻿using Azure.Data.Tables;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Collections;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -49,38 +51,34 @@ namespace Verbit.Backend.Tests.Integration
         [TestMethod]
         public void ShouldBootstrapAndCleanup()
         {
+            // Just a little canary-in-the-coal-mine about whether or not things are running okay.
             Assert.IsTrue(true);
         }
-
-        // Real tests can go here
 
         [TestMethod]
         public async Task CreatingAndDeletingTable_ShouldReturn200s()
         {
             const string listName = "IntegrationTestList_CreateAndDeleteTest";
-            var createResponse = await _httpClient.PostAsJsonAsync(
-                "api/masterlist/create",
-                new CreateMasterListRequest(
-                    listName,
-                    new CreateMasterListRowRequest[]
-                    {
-                        new CreateMasterListRowRequest(
-                            new string[][]
-                            {
-                                new[] { "row 1, cell 1, option 1", "row 1 cell 1, option 2" },
-                                new[] { "row 1 cell 2, option 1" },
-                            }
-                        ),
-                        new CreateMasterListRowRequest(new string[][] { new[] { "row 2 cell 1 option 1" } })
-                    }
-                )
+            var row1 = new CreateMasterListRowRequest(
+                new string[][]
+                {
+                    new[] { "row 1, cell 1, option 1", "row 1 cell 1, option 2" },
+                    new[] { "row 1 cell 2, option 1" },
+                }
             );
+            var row2 = new CreateMasterListRowRequest(new string[][] { new[] { "row 2 cell 1 option 1" } });
+            var createResponse = await PostNewList(listName, row1, row2);
 
             Assert.IsTrue(createResponse.IsSuccessStatusCode, "Failed to create master list.");
 
             var createdList = await createResponse.Content.ReadFromJsonAsync<MasterListRow[]>();
             var deleteResponse = await _httpClient.DeleteAsync($"/api/masterlist/{createdList![0].ListId}/delete/");
             Assert.IsTrue(deleteResponse.IsSuccessStatusCode);
+
+            // Make sure it's actually deleted
+            var getResponse = await _httpClient.GetAsync($"api/masterlist/{createdList[0].ListId}");
+
+            Assert.AreEqual(HttpStatusCode.NotFound, getResponse.StatusCode);
         }
 
         [TestMethod]
@@ -98,10 +96,7 @@ namespace Verbit.Backend.Tests.Integration
             );
             var row4 = new CreateMasterListRowRequest(new string[][] { new[] { "Oh no, only one cell" } });
 
-            var createResponse = await _httpClient.PostAsJsonAsync(
-                "api/masterlist/create",
-                new CreateMasterListRequest(listName, new CreateMasterListRowRequest[] { row1, row2, row3, row4 })
-            );
+            var createResponse = await PostNewList(listName, row1, row2, row3, row4);
 
             Assert.IsTrue(createResponse.IsSuccessStatusCode);
 
@@ -129,14 +124,7 @@ namespace Verbit.Backend.Tests.Integration
             var row6 = new CreateMasterListRowRequest(new string[][] { new[] { "Oh no, only one cell" } }); // Gets deleted
             var row7 = new CreateMasterListRowRequest(new string[][] { new[] { "Oh no, only one cell" } }); // Gets deleted
             var row8 = new CreateMasterListRowRequest(new string[][] { new[] { "Oh no, only one cell" } });
-
-            var createResponse = await _httpClient.PostAsJsonAsync(
-                "api/masterlist/create",
-                new CreateMasterListRequest(
-                    listName,
-                    new CreateMasterListRowRequest[] { row1, row2, row3, row4, row5, row6, row7, row8 }
-                )
-            );
+            HttpResponseMessage createResponse = await PostNewList(listName, row1, row2, row3, row4, row5, row6, row7, row8);
 
             Assert.IsTrue(createResponse.IsSuccessStatusCode);
 
@@ -144,10 +132,12 @@ namespace Verbit.Backend.Tests.Integration
             List<Guid>? oldOrder = createdList.Select(x => x.RowId).ToList();
 
             // Delete row numbers 2, 5, 6 and 7.
-            var deleteRequest = new DeleteMasterListRowsRequest(new[] { oldOrder[1], oldOrder[4], oldOrder[5], oldOrder[6] });
-            var deleteRowsReponse = await _httpClient.PostAsJsonAsync(
-                $"api/masterlist/{createdList[0].ListId}/deleterows",
-                deleteRequest
+            var deleteRowsReponse = await DeleteListRows(
+                createdList[0].ListId,
+                oldOrder[1],
+                oldOrder[4],
+                oldOrder[5],
+                oldOrder[6]
             );
             var newList = (await deleteRowsReponse.Content.ReadFromJsonAsync<MasterListRow[]>())!;
 
@@ -157,6 +147,44 @@ namespace Verbit.Backend.Tests.Integration
             Assert.IsTrue(newList.Single(x => x.RowId == oldOrder[2]).RowNum == 2);
             Assert.IsTrue(newList.Single(x => x.RowId == oldOrder[3]).RowNum == 3);
             Assert.IsTrue(newList.Single(x => x.RowId == oldOrder[7]).RowNum == 4);
+        }
+
+        [TestMethod]
+        public async Task WhenDeletingRows_ShouldDeleteEntireListIfAllRowsAreSpecified()
+        {
+            const string listName = "DeleteAllRowsDeletesListTooTest";
+            var row1 = new CreateMasterListRowRequest(new string[][] { new[] { "Only one cell" } });
+            var row2 = new CreateMasterListRowRequest(new string[][] { new[] { "Only one cell" } });
+            var createResponse = await PostNewList(listName, row1, row2);
+            var createdList = (await createResponse.Content.ReadFromJsonAsync<MasterListRow[]>())!;
+
+            Assert.IsTrue(createResponse.IsSuccessStatusCode);
+
+            var deleteRowsResponse = await DeleteListRows(createdList[0].ListId, createdList.Select(x => x.RowId).ToArray());
+
+            Assert.IsTrue(deleteRowsResponse.IsSuccessStatusCode);
+
+            var getResponse = await GetList(createdList[0].ListId);
+
+            Assert.AreEqual(HttpStatusCode.NotFound, getResponse.StatusCode);
+        }
+
+        private static async Task<HttpResponseMessage> GetList(Guid listId)
+        {
+            return await _httpClient.GetAsync($"api/masterlist/{listId}");
+        }
+
+        private static async Task<HttpResponseMessage> PostNewList(string listName, params CreateMasterListRowRequest[] rows)
+        {
+            return await _httpClient.PostAsJsonAsync("api/masterlist/create", new CreateMasterListRequest(listName, rows));
+        }
+
+        private static async Task<HttpResponseMessage> DeleteListRows(Guid listId, params Guid[] rowIds)
+        {
+            return await _httpClient.PostAsJsonAsync(
+                $"api/masterlist/{listId}/deleterows",
+                new DeleteMasterListRowsRequest(rowIds)
+            );
         }
 
         [ClassCleanup]

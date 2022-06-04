@@ -31,6 +31,7 @@ namespace VerbIt.Backend.Controllers
         [HttpGet]
         [Route("{listId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<MasterListRow[]>> Get(Guid listId, CancellationToken token)
         {
