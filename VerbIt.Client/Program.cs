@@ -18,9 +18,8 @@ builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<INetworkService, NetworkService>();
+builder.Services.AddSingleton<ICsvImporterService, CsvImporterService>();
 builder.Services.AddScoped<JwtAuthStateProvider>();
-builder.Services.AddScoped<AuthenticationStateProvider>(
-    provider => provider.GetRequiredService<JwtAuthStateProvider>()
-);
+builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<JwtAuthStateProvider>());
 
 await builder.Build().RunAsync();

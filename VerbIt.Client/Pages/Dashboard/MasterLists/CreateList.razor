@@ -1,0 +1,40 @@
+﻿@page "/dashboard/masterlists/create"
+<h3 class="text-center">Create new Master List</h3>
+
+@if (RowList != null)
+{
+    <section id="controls" class="flex-col mx-2">
+        <button class="btn-main" @onclick="AddRowClicked">Add row</button>
+        @*Here be styling dragons. Check app.css for details.*@
+        <label class="btn-input" for="CsvFileBrowser">
+            <InputFile class="hidden-file-input" id="CsvFileBrowser" OnChange="LoadCsvFiles" />
+            Import CSV
+        </label>
+    </section>
+    <section id="masterlistTable" class="flex flex-col px-2">
+        <table class="w-full">
+            <caption class="italic">@(ListName)</caption>
+            @{
+                int rowIndex = 0;
+            }
+            @foreach (var row in RowList)
+            {
+                int localRowIndex = rowIndex;
+                <tr>
+                    <th scope="row" class="text-left">@(localRowIndex + 1)</th>
+                    @{
+                        int colIndex = 0;
+                    }
+                    @foreach (var cellWords in row.Words)
+                    {
+                        int localColIndex = colIndex;
+                        <td @onclick="()=> CellClicked(row, localRowIndex, localColIndex)">@(string.Join(" | ", cellWords).Trim())</td>
+                        colIndex++;
+                    }
+                    <td class="text-left"><button class="btn-main" @onclick="() => RemoveRowClicked(row)">x</button></td>
+                </tr>
+                rowIndex++;
+            }
+        </table>
+    </section>
+}

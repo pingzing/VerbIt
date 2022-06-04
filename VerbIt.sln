@@ -21,7 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".config", ".config", "{8305
 		.config\dotnet-tools.json = .config\dotnet-tools.json
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Verbit.Backend.Tests", "Verbit.Backend.Tests\Verbit.Backend.Tests.csproj", "{06432362-ABFD-43EA-8342-87F8FAD85A71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Verbit.Backend.Tests", "Verbit.Backend.Tests\Verbit.Backend.Tests.csproj", "{06432362-ABFD-43EA-8342-87F8FAD85A71}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
