@@ -50,11 +50,29 @@ namespace VerbIt.Client.Services
             _authStateProvider.NotifyUserLogout();
             _httpClient.DefaultRequestHeaders.Authorization = null;
         }
+
+        // --- Master Lists ---
+
+        public async Task<MasterListRow[]?> CreateMasterList(CreateMasterListRequest createRequest, CancellationToken token)
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/masterlist/create", createRequest, token);
+            if (!response.IsSuccessStatusCode)
+            {
+                // Do sad things
+                return null;
+            }
+
+            return await response.Content.ReadFromJsonAsync<MasterListRow[]>(cancellationToken: token);
+        }
     }
 
     public interface INetworkService
     {
+        // Login/out
         Task<bool> Login(LoginRequest request, CancellationToken token);
         Task Logout();
+
+        // Master lists
+        Task<MasterListRow[]?> CreateMasterList(CreateMasterListRequest createRequest, CancellationToken token);
     }
 }

@@ -9,6 +9,11 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 {
     public partial class CreateList : ComponentBase
     {
+        private const string _listNameDefaultClass = "masterlist-default";
+        private const string _listNameErrorClass = "masterlist-error";
+        private const string _uploadCsvDefaultClass = "btn-input";
+        private const string _uploadCsvDisabledClass = "btn-input-disabled";
+
         [Inject]
         private NavigationManager NavManager { get; set; } = null!;
 
@@ -18,7 +23,13 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
         [Inject]
         private ILogger<CreateList> _logger { get; set; } = null!;
 
-        private string ListName { get; set; } = "New Master List Name";
+        [Inject]
+        private INetworkService _networkService { get; set; } = null!;
+
+        private bool IsSaving { get; set; } = false;
+        private string ListName { get; set; } = "";
+        private string ListNameFieldClass { get; set; } = _listNameDefaultClass;
+        private string UploadCsvButtonClass { get; set; } = _uploadCsvDefaultClass;
         private List<CreateListRowVM> RowList { get; set; } = new List<CreateListRowVM>();
         private int InitialCount { get; set; } = 1;
 
@@ -34,13 +45,6 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
             {
                 RowList.Add(CreateListRowVM.GetDefaultRow());
             }
-        }
-
-        internal void CellClicked(CreateListRowVM row, int rowIndex, int colIndex)
-        {
-            Console.WriteLine($"Cell with rownum: {rowIndex + 1} and colIndex {colIndex} clicked");
-            // TODO: Replace the clicked cell with an editable text field containing the column's words in a pipe-separated list.
-            // When the user leaves focus, or clicks accept, split by pipe, and save into this row.
         }
 
         internal void AddRowClicked()
@@ -72,6 +76,35 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
         {
             Console.WriteLine($"Removing row at index: {RowList.IndexOf(row)}");
             RowList.Remove(row);
+        }
+
+        internal async Task SaveListClicked()
+        {
+            IsSaving = true;
+            UploadCsvButtonClass = _uploadCsvDisabledClass;
+            if (string.IsNullOrWhiteSpace(ListName))
+            {
+                ListNameFieldClass = _listNameErrorClass;
+                IsSaving = false;
+                UploadCsvButtonClass = _uploadCsvDefaultClass;
+                return;
+            }
+
+            var createRequest = new CreateMasterListRequest(
+                ListName,
+                RowList.Select(x => new CreateMasterListRowRequest(x.Words.Select(y => y.ToArray()).ToArray())).ToArray()
+            );
+
+            var createdList = await _networkService.CreateMasterList(createRequest, CancellationToken.None);
+
+            // Save list, redirect back to "see all master lists" page
+            UploadCsvButtonClass = _uploadCsvDefaultClass;
+            IsSaving = false;
+        }
+
+        internal void OnListNameInput()
+        {
+            ListNameFieldClass = _listNameDefaultClass;
         }
     }
 }

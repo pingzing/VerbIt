@@ -3,17 +3,26 @@
 
 @if (RowList != null)
 {
-    <section id="controls" class="flex-col mx-2">
-        <button class="btn-main" @onclick="AddRowClicked">Add row</button>
-        @*Here be styling dragons. Check app.css for details.*@
-        <label class="btn-input" for="CsvFileBrowser">
-            <InputFile class="hidden-file-input" id="CsvFileBrowser" OnChange="LoadCsvFiles" />
+    <section id="controls" class="flex gap-2 mx-2">
+        <button class="btn-main" disabled="@IsSaving" @onclick="AddRowClicked">Add row</button>
+        @*Here be styling dragons to make a fileinput behave like a button. Check app.css for details.*@
+        <label class="@(UploadCsvButtonClass)" for="CsvFileBrowser">
+            <InputFile disabled="@IsSaving" class="hidden-file-input" id="CsvFileBrowser" OnChange="LoadCsvFiles" />
             Import CSV
         </label>
+        <button class="btn-main-action ml-auto" disabled="@IsSaving" @onclick="SaveListClicked">Save list</button>
     </section>
+
     <section id="masterlistTable" class="flex flex-col px-2">
         <table class="w-full">
-            <caption class="italic">@(ListName)</caption>
+            <caption>
+                <input class="@(ListNameFieldClass)"
+                   type="text"
+                   disabled="@IsSaving"
+                   placeholder="New Master List Name"
+                   @bind-value="@(ListName)"
+                   @oninput="OnListNameInput" />
+            </caption>
             @{
                 int rowIndex = 0;
             }
@@ -27,11 +36,23 @@
                     }
                     @foreach (var cellWords in row.Words)
                     {
+                        var localRow = row;
                         int localColIndex = colIndex;
-                        <td @onclick="()=> CellClicked(row, localRowIndex, localColIndex)">@(string.Join(" | ", cellWords).Trim())</td>
+                        <td>
+
+                            <input class="w-full h-full"
+                               type="text"
+                               disabled="@IsSaving"
+                               @bind-value="@localRow.Words[localColIndex]"
+                               @bind-value:event="oninput" />
+                        </td>
                         colIndex++;
                     }
-                    <td class="text-left"><button class="btn-main" @onclick="() => RemoveRowClicked(row)">x</button></td>
+                    <td class="text-left">
+                        <button class="btn-main" 
+                            disabled="@IsSaving" 
+                            @onclick="() => RemoveRowClicked(row)">x</button>
+                    </td>
                 </tr>
                 rowIndex++;
             }

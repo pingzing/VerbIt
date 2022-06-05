@@ -34,10 +34,10 @@ namespace VerbIt.Client.Services
                 {
                     Words = new List<List<string>>
                     {
-                        new List<string> { row.Col1 },
-                        new List<string> { row.Col2 },
-                        new List<string> { row.Col3 },
-                        new List<string> { row.Col4 },
+                        new List<string>(row.Col1.Split("|", StringSplitOptions.TrimEntries)),
+                        new List<string>(row.Col2.Split("|", StringSplitOptions.TrimEntries)),
+                        new List<string>(row.Col3.Split("|", StringSplitOptions.TrimEntries)),
+                        new List<string>(row.Col4.Split("|", StringSplitOptions.TrimEntries)),
                     }
                 };
             }

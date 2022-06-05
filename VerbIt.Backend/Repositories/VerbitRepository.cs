@@ -146,11 +146,14 @@ public class VerbitRepository : IVerbitRepository
                 )
                 .ToList();
 
-            IEnumerable<TableTransactionAction> addEntitiesBatch = rowsToCreate.Select(
-                row => new TableTransactionAction(TableTransactionActionType.Add, row)
-            );
+            IEnumerable<TableTransactionAction[]> addEntitiesBatches = rowsToCreate
+                .Select(row => new TableTransactionAction(TableTransactionActionType.Add, row))
+                .Chunk(100);
 
-            await tableClient.SubmitTransactionAsync(addEntitiesBatch, token);
+            foreach (TableTransactionAction[] chunk in addEntitiesBatches)
+            {
+                await tableClient.SubmitTransactionAsync(chunk, token);
+            }
 
             // Add a new entry to the "every list ID" tracker
             await _tableServiceClient
@@ -204,6 +207,7 @@ public class VerbitRepository : IVerbitRepository
         TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{MasterListTableName}");
         try
         {
+            // TODO: Chunkify this
             IEnumerable<TableTransactionAction> transactionActions = listRows.Select(x =>
             {
                 if (rowsToDelete.Contains(x.RowId))
@@ -243,6 +247,8 @@ public class VerbitRepository : IVerbitRepository
         try
         {
             MasterListRow[] existingList = await GetMasterList(listId, token);
+
+            // TODO: Chunkify this
             var actions = existingList.Select(
                 x =>
                     new TableTransactionAction(
@@ -315,6 +321,7 @@ public class VerbitRepository : IVerbitRepository
                 );
             }
 
+            // TODO: Chunkify this
             await tableClient.SubmitTransactionAsync(actions, token);
 
             if (editedList.ListName != null)
@@ -348,6 +355,7 @@ public class VerbitRepository : IVerbitRepository
             MasterListRowEntity lastRow = existingList.MaxBy(x => x.RowNum)!;
 
             int rowNum = lastRow.RowNum + 1;
+            // TODO: Chunkify this
             IEnumerable<TableTransactionAction> actions = request.Rows.Select(
                 createRowRequest =>
                     new TableTransactionAction(
