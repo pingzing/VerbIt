@@ -35,7 +35,7 @@ namespace VerbIt.Client.Services
                 return false;
             }
 
-            string receivedJwt = await result.Content.ReadAsStringAsync();
+            string receivedJwt = await result.Content.ReadAsStringAsync(token);
 
             await _localStorageService.SetItemAsync(JwtAuthStateProvider.AuthTokenKey, receivedJwt);
             _authStateProvider.NotifyUserAuthentication(receivedJwt);

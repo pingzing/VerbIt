@@ -146,14 +146,13 @@ public class VerbitRepository : IVerbitRepository
                 )
                 .ToList();
 
-            IEnumerable<TableTransactionAction[]> addEntitiesBatches = rowsToCreate
+            var addEntitiesBatches = rowsToCreate
                 .Select(row => new TableTransactionAction(TableTransactionActionType.Add, row))
-                .Chunk(100);
+                .Chunk(100)
+                .Select(x => tableClient.SubmitTransactionAsync(x, token));
 
-            foreach (TableTransactionAction[] chunk in addEntitiesBatches)
-            {
-                await tableClient.SubmitTransactionAsync(chunk, token);
-            }
+            // Await all batch chunks simultaneously
+            Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(addEntitiesBatches);
 
             // Add a new entry to the "every list ID" tracker
             await _tableServiceClient
@@ -207,29 +206,31 @@ public class VerbitRepository : IVerbitRepository
         TableClient tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{MasterListTableName}");
         try
         {
-            // TODO: Chunkify this
-            IEnumerable<TableTransactionAction> transactionActions = listRows.Select(x =>
-            {
-                if (rowsToDelete.Contains(x.RowId))
+            var transactionActions = listRows
+                .Select(x =>
                 {
-                    return new TableTransactionAction(
-                        TableTransactionActionType.Delete,
-                        new TableEntity(listId.ToString(), x.RowId.ToString())
-                    );
-                }
-                else
-                {
-                    return new TableTransactionAction(
-                        TableTransactionActionType.UpdateMerge,
-                        new TableEntity(listId.ToString(), x.RowId.ToString())
-                        {
-                            { nameof(MasterListRowEntity.RowNum), x.RowNum }
-                        }
-                    );
-                }
-            });
+                    if (rowsToDelete.Contains(x.RowId))
+                    {
+                        return new TableTransactionAction(
+                            TableTransactionActionType.Delete,
+                            new TableEntity(listId.ToString(), x.RowId.ToString())
+                        );
+                    }
+                    else
+                    {
+                        return new TableTransactionAction(
+                            TableTransactionActionType.UpdateMerge,
+                            new TableEntity(listId.ToString(), x.RowId.ToString())
+                            {
+                                { nameof(MasterListRowEntity.RowNum), x.RowNum }
+                            }
+                        );
+                    }
+                })
+                .Chunk(100)
+                .Select(x => tableClient.SubmitTransactionAsync(x, token));
 
-            await tableClient.SubmitTransactionAsync(transactionActions, token);
+            Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(transactionActions);
 
             // Get updated list, until we figure out a way to make transactions return resutls
             return await GetMasterList(listId, token);
@@ -248,16 +249,18 @@ public class VerbitRepository : IVerbitRepository
         {
             MasterListRow[] existingList = await GetMasterList(listId, token);
 
-            // TODO: Chunkify this
-            var actions = existingList.Select(
-                x =>
-                    new TableTransactionAction(
-                        TableTransactionActionType.Delete,
-                        new TableEntity(listId.ToString(), x.RowId.ToString())
-                    )
-            );
+            var actions = existingList
+                .Select(
+                    x =>
+                        new TableTransactionAction(
+                            TableTransactionActionType.Delete,
+                            new TableEntity(listId.ToString(), x.RowId.ToString())
+                        )
+                )
+                .Chunk(100)
+                .Select(x => tableClient.SubmitTransactionAsync(x, token));
 
-            await tableClient.SubmitTransactionAsync(actions, token);
+            Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(actions);
 
             await _tableServiceClient
                 .GetTableClient($"{_tablePrefix}{SavedMasterListTableName}")
@@ -321,8 +324,9 @@ public class VerbitRepository : IVerbitRepository
                 );
             }
 
-            // TODO: Chunkify this
-            await tableClient.SubmitTransactionAsync(actions, token);
+            var actionChunks = actions.Chunk(100).Select(x => tableClient.SubmitTransactionAsync(x, token));
+
+            Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(actionChunks);
 
             if (editedList.ListName != null)
             {
@@ -348,29 +352,39 @@ public class VerbitRepository : IVerbitRepository
         {
             // Get the last existing row
             List<MasterListRowEntity> existingList = new();
-            tableClient.QueryAsync<MasterListRowEntity>(
-                x => x.PartitionKey == listId.ToString(),
-                select: new[] { nameof(MasterListRowEntity.RowNum) }
-            );
+
+            await foreach (
+                MasterListRowEntity existingListRow in tableClient.QueryAsync<MasterListRowEntity>(
+                    x => x.PartitionKey == listId.ToString(),
+                    select: new[] { nameof(MasterListRowEntity.RowNum) }
+                )
+            )
+            {
+                existingList.Add(existingListRow);
+            }
+
             MasterListRowEntity lastRow = existingList.MaxBy(x => x.RowNum)!;
 
             int rowNum = lastRow.RowNum + 1;
-            // TODO: Chunkify this
-            IEnumerable<TableTransactionAction> actions = request.Rows.Select(
-                createRowRequest =>
-                    new TableTransactionAction(
-                        TableTransactionActionType.UpsertReplace,
-                        MasterListRowEntity.FromCreateRequest(
-                            listId,
-                            lastRow.ListName,
-                            rowNum++,
-                            createRowRequest.Words,
-                            lastRow.ListCreationTimestamp
-                        )
-                    )
-            );
 
-            await tableClient.SubmitTransactionAsync(actions, token);
+            var actions = request.Rows
+                .Select(
+                    createRowRequest =>
+                        new TableTransactionAction(
+                            TableTransactionActionType.UpsertReplace,
+                            MasterListRowEntity.FromCreateRequest(
+                                listId,
+                                lastRow.ListName,
+                                rowNum++,
+                                createRowRequest.Words,
+                                lastRow.ListCreationTimestamp
+                            )
+                        )
+                )
+                .Chunk(100)
+                .Select(x => tableClient.SubmitTransactionAsync(x, token));
+
+            Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(actions);
 
             return await GetMasterList(listId, token);
         }

@@ -25,5 +25,11 @@ builder.Services.AddScoped<INetworkService, NetworkService>();
 builder.Services.AddSingleton<ICsvImporterService, CsvImporterService>();
 builder.Services.AddScoped<JwtAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => provider.GetRequiredService<JwtAuthStateProvider>());
+builder.Services.AddScoped<DashboardTokenWatcherService>();
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+// Start up the singleton event watcher
+var watcherService = host.Services.GetRequiredService<DashboardTokenWatcherService>();
+
+await host.RunAsync();

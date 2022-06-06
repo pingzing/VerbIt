@@ -97,6 +97,8 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 
             var createdList = await _networkService.CreateMasterList(createRequest, CancellationToken.None);
 
+            NavManager.NavigateTo("dashboard/masterlists");
+
             // Save list, redirect back to "see all master lists" page
             UploadCsvButtonClass = _uploadCsvDefaultClass;
             IsSaving = false;
