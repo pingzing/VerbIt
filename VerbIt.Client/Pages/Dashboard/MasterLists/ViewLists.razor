@@ -1,2 +1,18 @@
 ﻿@page "/dashboard/masterlists"
-<h3>ViewLists</h3>
+<h3>View Master Lists</h3>
+
+@if (SavedLists == null) 
+{
+    <p>oh no, no lists</p>
+} else 
+{
+    @foreach (var savedList in SavedLists)
+    {
+        SavedMasterList localList = savedList;
+        <div>
+            <NavLink href="@($"{NavManager.Uri}/{localList.ListId}")">@localList.ListName</NavLink>
+        </div>
+    }
+}
+
+<NavLink href="@($"{NavManager.Uri}/create")">Create new master list</NavLink>

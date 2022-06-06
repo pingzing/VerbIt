@@ -14,10 +14,13 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 TypeDescriptor.AddAttributes(typeof(List<string>), new TypeConverterAttribute(typeof(StringCollectionToStringConverter)));
 
-builder.Services.AddScoped(sp =>
-{
-    return new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
-});
+// Create and add an HttpClient that uses the custom RedirectingAuthHandler.
+builder.Services.AddScoped<RedirectingAuthHandler>();
+builder.Services
+    .AddHttpClient("RedirectingAuthClient", client => client.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress))
+    .AddHttpMessageHandler<RedirectingAuthHandler>();
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("RedirectingAuthClient"));
+
 builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();

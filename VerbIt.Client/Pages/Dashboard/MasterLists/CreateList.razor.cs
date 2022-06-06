@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.WebUtilities;
+using System.Text.Json;
 using VerbIt.Client.Models;
 using VerbIt.Client.Services;
 using VerbIt.DataModels;
@@ -9,10 +11,11 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 {
     public partial class CreateList : ComponentBase
     {
-        private const string _listNameDefaultClass = "masterlist-default";
-        private const string _listNameErrorClass = "masterlist-error";
-        private const string _uploadCsvDefaultClass = "btn-input";
-        private const string _uploadCsvDisabledClass = "btn-input-disabled";
+        private const string PrevSavedMasterList = "prevSavedMasterList";
+        private const string ListNameDefaultClass = "masterlist-default";
+        private const string ListNameErrorClass = "masterlist-error";
+        private const string UploadCsvDefaultClass = "btn-input";
+        private const string UploadCsvDisabledClass = "btn-input-disabled";
 
         [Inject]
         private NavigationManager NavManager { get; set; } = null!;
@@ -26,15 +29,30 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
         [Inject]
         private INetworkService _networkService { get; set; } = null!;
 
+        [Inject]
+        private ILocalStorageService _localStorageService { get; set; } = null!;
+
         private bool IsSaving { get; set; } = false;
         private string ListName { get; set; } = "";
-        private string ListNameFieldClass { get; set; } = _listNameDefaultClass;
-        private string UploadCsvButtonClass { get; set; } = _uploadCsvDefaultClass;
+        private string ListNameFieldClass { get; set; } = ListNameDefaultClass;
+        private string UploadCsvButtonClass { get; set; } = UploadCsvDefaultClass;
         private List<CreateListRowVM> RowList { get; set; } = new List<CreateListRowVM>();
         private int InitialCount { get; set; } = 1;
 
-        protected override void OnInitialized()
+        protected override async Task OnInitializedAsync()
         {
+            if (await _localStorageService.ContainKeyAsync(PrevSavedMasterList))
+            {
+                string savedListString = await _localStorageService.GetItemAsync<string>(PrevSavedMasterList);
+                await _localStorageService.RemoveItemAsync(PrevSavedMasterList);
+                if (!string.IsNullOrWhiteSpace(savedListString))
+                {
+                    CreateListRowVM[] savedRows = JsonSerializer.Deserialize<CreateListRowVM[]>(savedListString)!;
+                    RowList = new List<CreateListRowVM>(savedRows);
+                    return;
+                }
+            }
+
             var thisUri = NavManager.ToAbsoluteUri(NavManager.Uri);
             if (QueryHelpers.ParseNullableQuery(thisUri.Query)?.TryGetValue("initialCount", out var initialCount) == true)
             {
@@ -81,14 +99,18 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
         internal async Task SaveListClicked()
         {
             IsSaving = true;
-            UploadCsvButtonClass = _uploadCsvDisabledClass;
+            UploadCsvButtonClass = UploadCsvDisabledClass;
             if (string.IsNullOrWhiteSpace(ListName))
             {
-                ListNameFieldClass = _listNameErrorClass;
+                ListNameFieldClass = ListNameErrorClass;
                 IsSaving = false;
-                UploadCsvButtonClass = _uploadCsvDefaultClass;
+                UploadCsvButtonClass = UploadCsvDefaultClass;
                 return;
             }
+
+            // Saved the row state just in case this request fails and the user gets booted to the login screen
+            string listStateString = JsonSerializer.Serialize<CreateListRowVM[]>(RowList.ToArray());
+            await _localStorageService.SetItemAsync<string>(PrevSavedMasterList, listStateString);
 
             var createRequest = new CreateMasterListRequest(
                 ListName,
@@ -96,17 +118,32 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
             );
 
             var createdList = await _networkService.CreateMasterList(createRequest, CancellationToken.None);
-
-            NavManager.NavigateTo("dashboard/masterlists");
+            if (createdList.IsError)
+            {
+                if (createdList.UnwrapError() == NetworkError.Unauthorized)
+                {
+                    NavManager.NavigateTo($"/login?originalUrl={Uri.EscapeDataString(NavManager.Uri)}");
+                }
+                else
+                {
+                    // TODO: Display error to user
+                }
+            }
+            else
+            {
+                // Request succeeded, no need to keep the saved state around
+                await _localStorageService.RemoveItemAsync(PrevSavedMasterList);
+                NavManager.NavigateTo("dashboard/masterlists");
+            }
 
             // Save list, redirect back to "see all master lists" page
-            UploadCsvButtonClass = _uploadCsvDefaultClass;
+            UploadCsvButtonClass = UploadCsvDefaultClass;
             IsSaving = false;
         }
 
         internal void OnListNameInput()
         {
-            ListNameFieldClass = _listNameDefaultClass;
+            ListNameFieldClass = ListNameDefaultClass;
         }
     }
 }
