@@ -1,0 +1,14 @@
+﻿@page "/dashboard/masterlists/{listId}"
+
+<section id="actions" class="flex gap-5 mt-2">
+    <NavLink href="/dashboard">← Go back</NavLink>
+</section>
+
+@if (_listExists && _listId != null) 
+{
+    <h3 class="mt-2">View Single List</h3>
+}
+else 
+{
+    <NotFoundComponent />
+}

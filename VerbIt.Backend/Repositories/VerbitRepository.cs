@@ -164,6 +164,7 @@ public class VerbitRepository : IVerbitRepository
                         RowKey = listId.ToString(),
                         ListName = createRequest.Name,
                         ListCreationTimestamp = listCreationTimestamp,
+                        TotalRows = rowsToCreate.Count,
                     }
                 );
 
@@ -232,8 +233,10 @@ public class VerbitRepository : IVerbitRepository
 
             Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(transactionActions);
 
-            // Get updated list, until we figure out a way to make transactions return resutls
-            return await GetMasterList(listId, token);
+            MasterListRow[] updatedList = await GetMasterList(listId, token);
+            await UpdateSavedMasterList(listId, null, updatedList.Length, token);
+
+            return updatedList;
         }
         catch (RequestFailedException ex)
         {
@@ -330,7 +333,7 @@ public class VerbitRepository : IVerbitRepository
 
             if (editedList.ListName != null)
             {
-                await UpdatedSavedMasterListName(listId, editedList.ListName, token);
+                await UpdateSavedMasterList(listId, editedList.ListName, null, token);
             }
         }
         catch (RequestFailedException ex)
@@ -386,7 +389,10 @@ public class VerbitRepository : IVerbitRepository
 
             Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(actions);
 
-            return await GetMasterList(listId, token);
+            MasterListRow[]? updatedList = await GetMasterList(listId, token);
+            await UpdateSavedMasterList(listId, null, updatedList.Length, token);
+
+            return updatedList;
         }
         catch (RequestFailedException ex)
         {
@@ -453,22 +459,20 @@ public class VerbitRepository : IVerbitRepository
         }
     }
 
-    // Tucked away into its own little method, because the SDK has a bug where it throws
-    // if the 'Prefer: return-content' header is set and we do a merge-update.
-    private async Task UpdatedSavedMasterListName(Guid listId, string newName, CancellationToken token)
+    private async Task UpdateSavedMasterList(Guid listId, string? newName, int? newRowCount, CancellationToken token)
     {
         var savedListclient = _tableServiceClient.GetTableClient($"{_tablePrefix}{SavedMasterListTableName}");
-        var entity = new TableEntity(SavedMasterListEntity.DefaultPartitionKey, listId.ToString())
+        var entity = new TableEntity(SavedMasterListEntity.DefaultPartitionKey, listId.ToString());
+        if (newName != null)
         {
-            { nameof(SavedMasterListEntity.ListName), newName }
-        };
-
-        try
-        {
-            await savedListclient.UpdateEntityAsync(entity, ETag.All, TableUpdateMode.Merge, cancellationToken: token);
+            entity[nameof(SavedMasterListEntity.ListName)] = newName;
         }
-        // Swallow 200s because guess what they mean it _worked_
-        catch (RequestFailedException ex) when (ex.Status == StatusCodes.Status200OK) { }
+        if (newRowCount != null)
+        {
+            entity[nameof(SavedMasterListEntity.TotalRows)] = newRowCount;
+        }
+
+        await savedListclient.UpdateEntityAsync(entity, ETag.All, TableUpdateMode.Merge, cancellationToken: token);
     }
 }
 

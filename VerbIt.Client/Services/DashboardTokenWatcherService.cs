@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Routing;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using VerbIt.Client.Authentication;
@@ -13,21 +12,20 @@ namespace VerbIt.Client.Services
         private readonly JwtAuthStateProvider _jwtAuthStateProvider;
 
         public DashboardTokenWatcherService(
-            NavigationManager navManager,
             INetworkService networkService,
-            JwtAuthStateProvider jwtAuthStateProvider
+            JwtAuthStateProvider jwtAuthStateProvider,
+            NavigationManager navManager
         )
         {
-            _navManager = navManager;
             _networkService = networkService;
             _jwtAuthStateProvider = jwtAuthStateProvider;
-
-            _navManager.LocationChanged += OnLocationChanged;
+            _navManager = navManager;
         }
 
-        private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+        // Called by the root router's OnNavigateAsync method
+        public async void OnNavigated(string newPath)
         {
-            if (e.Location.Contains("/dashboard"))
+            if (newPath.StartsWith("dashboard"))
             {
                 Console.WriteLine($"Validating token expiry in Dashboard...");
                 ClaimsPrincipal user = (await _jwtAuthStateProvider.GetAuthenticationStateAsync()).User;

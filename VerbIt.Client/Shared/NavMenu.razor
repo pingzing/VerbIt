@@ -1,30 +1,26 @@
 ﻿@inject INetworkService NetworkService;
 @inject NavigationManager NavigationManager;
 
-<div>
-    <nav>
-        <div>
-            <NavLink href="/" Match="NavLinkMatch.All">
-                <span aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="flex">
+<nav class="flex gap-5">
+    <NavLink href="/" Match="NavLinkMatch.All">
+        <span aria-hidden="true"></span> Home
+    </NavLink>    
+
+    <AuthorizeView>
+        <NotAuthorized>
             <NavLink href="login">
                 <span aria-hidden="true"></span> Login
-            </NavLink>
-            <AuthorizeView>
-                <Authorized>
-                    <button class="btn-main" @onclick="CallLogout">Log out</button>
-                </Authorized>
-            </AuthorizeView>
-        </div>
-        <div>
-            <NavLink href="dashboard">
-                <span aria-hidden="true"></span>Dashboard
-            </NavLink>
-        </div>
-    </nav>
-</div>
+            </NavLink>  
+        </NotAuthorized>
+        <Authorized>
+            <button class="btn-main" @onclick="CallLogout">Log out</button>
+        </Authorized>
+    </AuthorizeView>
+
+    <NavLink href="dashboard">
+        <span aria-hidden="true"></span>Dashboard
+    </NavLink>
+</nav>
 
 @code {
     public async Task CallLogout()

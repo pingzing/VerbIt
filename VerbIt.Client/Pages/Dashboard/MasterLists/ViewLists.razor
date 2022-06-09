@@ -1,18 +1,40 @@
 ﻿@page "/dashboard/masterlists"
-<h3>View Master Lists</h3>
 
-@if (SavedLists == null) 
-{
-    <p>oh no, no lists</p>
-} else 
-{
-    @foreach (var savedList in SavedLists)
+<section id="actions" class="flex gap-5 mt-2">
+    <NavLink href="/dashboard">← Go back</NavLink>
+    <NavLink href="@($"{NavManager.Uri}/create")">Create new master list</NavLink>
+</section>
+
+<h3 class="mt-2">Master Lists</h3>
+
+<section class="flex flex-col mt-2 px-2">
+    @if (SavedLists == null || SavedLists.Count == 0) 
     {
-        SavedMasterList localList = savedList;
-        <div>
-            <NavLink href="@($"{NavManager.Uri}/{localList.ListId}")">@localList.ListName</NavLink>
-        </div>
+        <p>It looks like there aren't any master lists here!</p>
     }
-}
-
-<NavLink href="@($"{NavManager.Uri}/create")">Create new master list</NavLink>
+    else 
+    {
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="font-bold" scope="col">List Name</th>
+                    <th class="font-bold" scope="col">Number of Verbs</th>
+                    <th class="font-bold" scope="col">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var savedList in SavedLists)
+            {
+                SavedMasterList localList = savedList;
+                <tr>
+                    <td class="text-center">
+                        <NavLink href="@($"{NavManager.Uri}/{localList.ListId}")">@localList.ListName</NavLink>
+                    </td>
+                    <td class="text-center">@(localList.TotalRows)</td>
+                    <td class="text-center">@(localList.ListCreationTimestamp.ToLocalTime().ToString("dd.MM.yyyy HH':'mm"))</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }    
+</section>

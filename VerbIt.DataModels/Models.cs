@@ -13,4 +13,4 @@ public record MasterListRow(
     [Required] DateTimeOffset ListCreationTimestamp
 );
 
-public record SavedMasterList(Guid ListId, string ListName, DateTimeOffset ListCreationTimestamp);
+public record SavedMasterList(Guid ListId, string ListName, DateTimeOffset ListCreationTimestamp, int TotalRows);

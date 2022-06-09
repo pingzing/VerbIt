@@ -1,11 +1,10 @@
 ﻿using Blazored.LocalStorage;
-using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using VerbIt.Client.Authentication;
-using VerbIt.Client.Models;
 using VerbIt.DataModels;
 
 namespace VerbIt.Client.Services
@@ -16,17 +15,20 @@ namespace VerbIt.Client.Services
         private readonly HttpClient _httpClient;
         private readonly JwtAuthStateProvider _authStateProvider;
         private readonly ILocalStorageService _localStorageService;
+        private readonly NavigationManager _navManager;
 
         public NetworkService(
             HttpClient httpClient,
             JwtAuthStateProvider authStateProvider,
-            ILocalStorageService localStorageService
+            ILocalStorageService localStorageService,
+            NavigationManager navManager
         )
         {
             _jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             _httpClient = httpClient;
             _authStateProvider = authStateProvider;
             _localStorageService = localStorageService;
+            _navManager = navManager;
         }
 
         public async Task<bool> Login(LoginRequest request, CancellationToken token)
@@ -55,39 +57,60 @@ namespace VerbIt.Client.Services
 
         // --- Master Lists ---
 
-        public async Task<Result<MasterListRow[], NetworkError>> CreateMasterList(
-            CreateMasterListRequest createRequest,
-            CancellationToken token
-        )
+        public async Task<MasterListRow[]?> CreateMasterList(CreateMasterListRequest createRequest, CancellationToken token)
         {
             var response = await _httpClient.PostAsJsonAsync("api/masterlist/create", createRequest, token);
             if (!response.IsSuccessStatusCode)
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    return Result<MasterListRow[], NetworkError>.Error(NetworkError.Unauthorized);
+                    RedirectToLogin();
                 }
+
+                return null;
             }
 
             MasterListRow[] list = (await response.Content.ReadFromJsonAsync<MasterListRow[]>(cancellationToken: token))!;
-            return Result<MasterListRow[], NetworkError>.Ok(list);
+            return list;
         }
 
-        public async Task<Result<SavedMasterList[], NetworkError>> GetMasterLists(CancellationToken token)
+        public async Task<MasterListRow[]?> GetMasterList(Guid listId, CancellationToken token)
+        {
+            var response = await _httpClient.GetAsync($"api/masterlist/{listId}");
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    RedirectToLogin();
+                }
+
+                return null;
+            }
+
+            MasterListRow[] list = (await response.Content.ReadFromJsonAsync<MasterListRow[]>(cancellationToken: token))!;
+            return list;
+        }
+
+        public async Task<SavedMasterList[]?> GetMasterLists(CancellationToken token)
         {
             var response = await _httpClient.GetAsync("api/masterlist", token);
             if (!response.IsSuccessStatusCode)
             {
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
-                    return Result<SavedMasterList[], NetworkError>.Error(NetworkError.Unauthorized);
+                    RedirectToLogin();
                 }
 
-                return Result<SavedMasterList[], NetworkError>.Error(NetworkError.InternalServerError);
+                return null;
             }
 
             var savedLists = (await response.Content.ReadFromJsonAsync<SavedMasterList[]>())!;
-            return Result<SavedMasterList[], NetworkError>.Ok(savedLists);
+            return savedLists;
+        }
+
+        private void RedirectToLogin()
+        {
+            _navManager.NavigateTo($"/login?originalUrl={Uri.EscapeDataString(_navManager.Uri)}");
         }
     }
 
@@ -98,11 +121,10 @@ namespace VerbIt.Client.Services
         Task Logout();
 
         // Master lists
-        Task<Result<MasterListRow[], NetworkError>> CreateMasterList(
-            CreateMasterListRequest createRequest,
-            CancellationToken token
-        );
+        Task<MasterListRow[]?> CreateMasterList(CreateMasterListRequest createRequest, CancellationToken token);
 
-        Task<Result<SavedMasterList[], NetworkError>> GetMasterLists(CancellationToken token);
+        Task<MasterListRow[]?> GetMasterList(Guid listId, CancellationToken token);
+
+        Task<SavedMasterList[]?> GetMasterLists(CancellationToken token);
     }
 }

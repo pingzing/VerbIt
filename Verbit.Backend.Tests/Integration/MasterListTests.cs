@@ -30,7 +30,7 @@ namespace Verbit.Backend.Tests.Integration
                 builder.ConfigureAppConfiguration(
                     (context, conf) =>
                     {
-                        conf.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"));
+                        conf.AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.test.json"));
                     }
                 );
             });

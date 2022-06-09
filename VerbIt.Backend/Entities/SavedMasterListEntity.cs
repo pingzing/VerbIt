@@ -14,10 +14,11 @@ namespace VerbIt.Backend.Entities
         public ETag ETag { get; set; }
         public string ListName { get; set; } = null!;
         public DateTimeOffset ListCreationTimestamp { get; set; }
+        public int TotalRows { get; set; }
 
         public SavedMasterList AsDTO()
         {
-            return new SavedMasterList(Guid.Parse(RowKey), ListName, ListCreationTimestamp);
+            return new SavedMasterList(Guid.Parse(RowKey), ListName, ListCreationTimestamp, TotalRows);
         }
     }
 }

@@ -118,16 +118,9 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
             );
 
             var createdList = await _networkService.CreateMasterList(createRequest, CancellationToken.None);
-            if (createdList.IsError)
+            if (createdList == null)
             {
-                if (createdList.UnwrapError() == NetworkError.Unauthorized)
-                {
-                    NavManager.NavigateTo($"/login?originalUrl={Uri.EscapeDataString(NavManager.Uri)}");
-                }
-                else
-                {
-                    // TODO: Display error to user
-                }
+                // TODO: Display an error. If we got a 401, we'll be redirected to /login shortly
             }
             else
             {

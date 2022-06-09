@@ -17,13 +17,13 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
         protected override async Task OnParametersSetAsync()
         {
             var getListsResult = await _networkService.GetMasterLists(CancellationToken.None);
-            if (getListsResult.IsError)
+            if (getListsResult == null)
             {
-                // TODO: handle it
+                // TODO: Show error
                 return;
             }
 
-            SavedLists = new List<SavedMasterList>(getListsResult.Unwrap().OrderBy(x => x.ListCreationTimestamp));
+            SavedLists = new List<SavedMasterList>(getListsResult.OrderBy(x => x.ListCreationTimestamp));
         }
     }
 }
