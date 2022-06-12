@@ -92,7 +92,6 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 
         internal void RemoveRowClicked(CreateListRowVM row)
         {
-            Console.WriteLine($"Removing row at index: {RowList.IndexOf(row)}");
             RowList.Remove(row);
         }
 

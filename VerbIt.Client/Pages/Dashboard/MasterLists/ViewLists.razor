@@ -1,11 +1,10 @@
 ﻿@page "/dashboard/masterlists"
 
-<section id="actions" class="flex gap-5 mt-2">
-    <NavLink href="/dashboard">← Go back</NavLink>
-    <NavLink href="@($"{NavManager.Uri}/create")">Create new master list</NavLink>
-</section>
+<h3 class="mt-2 text-3xl ml-5">Master Lists</h3>
 
-<h3 class="mt-2">Master Lists</h3>
+<section id="actions" class="flex gap-5 m-5">
+    <NavLink class="btn-main-action hover:text-white no-underline" href="@($"{NavManager.Uri}/create")">Create new master list</NavLink>
+</section>
 
 <section class="flex flex-col mt-2 px-2">
     @if (SavedLists == null || SavedLists.Count == 0) 
@@ -32,6 +31,8 @@
                     </td>
                     <td class="text-center">@(localList.TotalRows)</td>
                     <td class="text-center">@(localList.ListCreationTimestamp.ToLocalTime().ToString("dd.MM.yyyy HH':'mm"))</td>
+                    <td><button class="btn-main"
+                            @onclick="() => DeleteMasterListClicked(localList)">x</button></td>
                 </tr>
             }
             </tbody>

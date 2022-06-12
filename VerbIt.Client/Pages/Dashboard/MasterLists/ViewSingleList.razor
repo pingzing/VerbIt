@@ -1,12 +1,87 @@
 ﻿@page "/dashboard/masterlists/{listId}"
 
-<section id="actions" class="flex gap-5 mt-2">
-    <NavLink href="/dashboard">← Go back</NavLink>
-</section>
-
-@if (_listExists && _listId != null) 
+@if (_listExists && _listId != null && RowList?.Any() == true) 
 {
-    <h3 class="mt-2">View Single List</h3>
+    <h3 class="mt-2 ml-5 text-3xl">View Single List</h3>
+
+    <button hidden="@(IsEditMode)" class="btn-main-action ml-5 mt-5" @onclick=EditModeClicked>Edit list</button>
+    <button disabled="@IsSaving" hidden="@(!IsEditMode)" class="btn-main ml-5 mt-5" @onclick=DiscardChangesClicked>Discard changes</button>
+    <button disabled="@IsSaving" hidden="@(!IsEditMode)" class="btn-main-action ml-2 mt-5" @onclick=SaveChanges>Save changes</button>
+
+    <section id="viewList" class=@($"flex flex-col ml-5 {(IsEditMode ? "hidden" : "")}")>
+        <h4 class="text-lg mt-5 mb-2">@(ListName)</h4>
+        <table class="w-full">
+            @{
+                int rowIndex = 0;
+            }
+            @foreach (var row in RowList)
+            {
+                int localRowIndex = rowIndex;
+                <tr>
+                    <th scope="row" width="4%" class="text-left">@(localRowIndex + 1)</th>
+                    @{
+                        int colIndex = 0;
+                    }
+                    @foreach (var cellWords in row.Words)
+                    {
+                        var localRow = row;
+                        int localColIndex = colIndex;
+                        <td width="24%">                            
+                            @(string.Join(" | ", localRow.Words[localColIndex]))
+                        </td>
+                        colIndex++;
+                    }
+                </tr>
+                rowIndex++;
+            }
+        </table>
+    </section>
+
+    <section id="editList" class=@($"flex flex-col ml-5 mt-5 {(!IsEditMode ? "hidden" : "")}")>
+        <table class="w-full">
+            <caption>
+                <input class="@(ListNameFieldClass)"
+                   type="text"
+                   disabled="@IsSaving"
+                   placeholder="New Master List Name"
+                   @bind-value="@(ListName)"
+                   @oninput="OnListNameInput" />
+            </caption>
+            @{
+                int editRowIndex = 0;
+            }
+            @foreach (var row in EditRowList)
+            {
+                int localRowIndex = editRowIndex;
+                <tr>
+                    <th scope="row" class="text-left">@(localRowIndex + 1)</th>
+                    @{
+                        int colIndex = 0;
+                    }
+                    @foreach (var cellWords in row.Words)
+                    {
+                        var localRow = row;
+                        int localColIndex = colIndex;
+                        <td>
+
+                            <input class="w-full h-full"
+                               type="text"
+                               disabled="@IsSaving"
+                               @bind-value="@localRow.Words[localColIndex]"
+                               @bind-value:event="oninput" />
+                        </td>
+                        colIndex++;
+                    }
+                    <td class="text-left">
+                        <button class="btn-main" 
+                            disabled="@IsSaving" 
+                            @onclick="() => RemoveRowClicked(row)">x</button>
+                    </td>
+                </tr>
+                editRowIndex++;
+            }
+        </table>
+    </section>
 }
 else 
 {

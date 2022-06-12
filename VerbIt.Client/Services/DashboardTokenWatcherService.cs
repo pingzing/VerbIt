@@ -5,6 +5,8 @@ using VerbIt.Client.Authentication;
 
 namespace VerbIt.Client.Services
 {
+    // Responsible for listening for all navigation events, and redirecting the user to the login page
+    // if their credentials have expired.
     public class DashboardTokenWatcherService
     {
         private readonly NavigationManager _navManager;

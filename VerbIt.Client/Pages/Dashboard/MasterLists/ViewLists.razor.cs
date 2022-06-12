@@ -25,5 +25,10 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 
             SavedLists = new List<SavedMasterList>(getListsResult.OrderBy(x => x.ListCreationTimestamp));
         }
+
+        private async Task DeleteMasterListClicked(SavedMasterList list)
+        {
+            // TODO: ask are you sure? and make network request
+        }
     }
 }

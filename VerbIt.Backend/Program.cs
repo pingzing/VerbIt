@@ -137,10 +137,10 @@ app.UseExceptionHandler(handler =>
         }
     });
 });
+
 app.UseHttpsRedirection();
 
-app.UseBlazorFrameworkFiles();
-app.UseStaticFiles();
+app.UseBlazorFrameworkFiles().UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

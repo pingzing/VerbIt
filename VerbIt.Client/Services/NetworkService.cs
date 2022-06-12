@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using VerbIt.Client.Authentication;
 using VerbIt.DataModels;
@@ -108,6 +109,29 @@ namespace VerbIt.Client.Services
             return savedLists;
         }
 
+        public async Task<MasterListRow[]?> EditMasterList(
+            Guid listId,
+            EditMasterListRequest editRequest,
+            CancellationToken token
+        )
+        {
+            string serializedEditRequest = JsonSerializer.Serialize(editRequest);
+            StringContent editContent = new StringContent(serializedEditRequest, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PatchAsync($"/api/masterlist/{listId}/edit", editContent, token);
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response?.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    RedirectToLogin();
+                }
+
+                return null;
+            }
+
+            MasterListRow[] updatedList = (await response.Content.ReadFromJsonAsync<MasterListRow[]>(cancellationToken: token))!;
+            return updatedList;
+        }
+
         private void RedirectToLogin()
         {
             _navManager.NavigateTo($"/login?originalUrl={Uri.EscapeDataString(_navManager.Uri)}");
@@ -122,9 +146,8 @@ namespace VerbIt.Client.Services
 
         // Master lists
         Task<MasterListRow[]?> CreateMasterList(CreateMasterListRequest createRequest, CancellationToken token);
-
         Task<MasterListRow[]?> GetMasterList(Guid listId, CancellationToken token);
-
         Task<SavedMasterList[]?> GetMasterLists(CancellationToken token);
+        Task<MasterListRow[]?> EditMasterList(Guid listId, EditMasterListRequest editRequest, CancellationToken token);
     }
 }

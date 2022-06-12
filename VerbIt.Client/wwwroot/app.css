@@ -468,21 +468,51 @@ Ensure the default browser behavior of the `hidden` attribute.
   --tw-backdrop-sepia:  ;
 }
 
+.m-5 {
+  margin: 1.25rem;
+}
+
 .mx-2 {
   margin-left: 0.5rem;
   margin-right: 0.5rem;
+}
+
+.mx-5 {
+  margin-left: 1.25rem;
+  margin-right: 1.25rem;
+}
+
+.my-5 {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
 }
 
 .mt-5 {
   margin-top: 1.25rem;
 }
 
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
 .ml-auto {
   margin-left: auto;
 }
 
-.mt-2 {
-  margin-top: 0.5rem;
+.ml-5 {
+  margin-left: 1.25rem;
+}
+
+.ml-4 {
+  margin-left: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
 }
 
 .block {
@@ -495,6 +525,10 @@ Ensure the default browser behavior of the `hidden` attribute.
 
 .table {
   display: table;
+}
+
+.hidden {
+  display: none;
 }
 
 .h-full {
@@ -513,12 +547,12 @@ Ensure the default browser behavior of the `hidden` attribute.
   align-items: center;
 }
 
-.gap-2 {
-  gap: 0.5rem;
-}
-
 .gap-5 {
   gap: 1.25rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
 }
 
 .rounded-sm {
@@ -532,6 +566,11 @@ Ensure the default browser behavior of the `hidden` attribute.
 .px-2 {
   padding-left: 0.5rem;
   padding-right: 0.5rem;
+}
+
+.px-5 {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
 
 .text-left {
@@ -557,8 +596,18 @@ Ensure the default browser behavior of the `hidden` attribute.
   line-height: 1.75rem;
 }
 
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
 .font-bold {
   font-weight: 700;
+}
+
+.no-underline {
+  -webkit-text-decoration-line: none;
+          text-decoration-line: none;
 }
 
 a {
@@ -801,4 +850,9 @@ input {
 
 .blazor-error-boundary::after {
   content: "An error has occurred."
+}
+
+.hover\:text-white:hover {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity));
 }

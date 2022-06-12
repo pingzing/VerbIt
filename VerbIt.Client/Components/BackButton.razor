@@ -1,0 +1,29 @@
+﻿@inject NavigationManager _navManager;
+@implements IDisposable;
+
+<NavLink class="@($"{Class} block")" href="@($"{string.Join(string.Empty, new Uri(_navManager.Uri).Segments[..^1])}")">
+    @(Text)
+</NavLink>
+
+@code {
+    [Parameter]
+    public string Text { get; set; } = "← Go back";
+
+    [Parameter]
+    public string Class { get; set; } = "mt-2";
+
+    protected override void OnInitialized()
+    {
+        _navManager.LocationChanged += LocationChanged;
+    }
+
+    private void LocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        StateHasChanged();
+    }
+
+    void IDisposable.Dispose()
+    {
+        _navManager.LocationChanged -= LocationChanged;
+    }
+}

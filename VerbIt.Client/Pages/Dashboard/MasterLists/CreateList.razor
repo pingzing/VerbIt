@@ -1,12 +1,10 @@
 ﻿@page "/dashboard/masterlists/create"
 
-<NavLink class="mt-2 block" href="/dashboard/masterlists">← Go back</NavLink>
-
-<h3 class="mt-2">Create new Master List</h3>
+<h3 class="mt-2 text-3xl ml-5">Create New Master List</h3>
 
 @if (RowList != null)
 {
-    <section id="controls" class="flex gap-2 mx-2">
+    <section id="controls" class="flex gap-2 m-5 mx-5">
         <button class="btn-main" disabled="@IsSaving" @onclick="AddRowClicked">Add row</button>
         @*Here be styling dragons to make a fileinput behave like a button. Check app.css for details.*@
         <label class="@(UploadCsvButtonClass)" for="CsvFileBrowser">
