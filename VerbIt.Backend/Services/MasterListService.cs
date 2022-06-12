@@ -17,12 +17,12 @@ namespace VerbIt.Backend.Services
 
         public async Task<SavedMasterList[]> GetSavedMasterLists(CancellationToken token)
         {
-            return await _repository.GetSavedMasterLists(token);
+            return (await _repository.GetSavedMasterLists(token)).OrderBy(x => x.ListCreationTimestamp).ToArray();
         }
 
-        public Task<MasterListRow[]> GetList(Guid listId, CancellationToken token)
+        public async Task<MasterListRow[]> GetList(Guid listId, CancellationToken token)
         {
-            return _repository.GetMasterList(listId, token);
+            return (await _repository.GetMasterList(listId, token)).OrderBy(x => x.RowNum).ToArray();
         }
 
         public Task<MasterListRow[]> CreateList(CreateMasterListRequest createRequest, CancellationToken token)
@@ -72,7 +72,9 @@ namespace VerbIt.Backend.Services
                 }
             }
 
-            return await _repository.DeleteMasterListRows(listId, existingList, toDeleteHashes, token);
+            return (await _repository.DeleteMasterListRows(listId, existingList, toDeleteHashes, token))
+                .OrderBy(x => x.RowNum)
+                .ToArray();
         }
 
         public Task DeleteList(Guid listId, CancellationToken token)
@@ -140,12 +142,12 @@ namespace VerbIt.Backend.Services
             await _repository.EditMasterList(listId, editRequest, rowIdsToChangeName?.ToArray(), token);
 
             // Return the now-edited list
-            return await _repository.GetMasterList(listId, token);
+            return (await _repository.GetMasterList(listId, token)).OrderBy(x => x.RowNum).ToArray();
         }
 
         public async Task<MasterListRow[]> AddRows(Guid listId, AddMasterListRowsRequest request, CancellationToken token)
         {
-            return await _repository.AddMasterListRows(listId, request, token);
+            return (await _repository.AddMasterListRows(listId, request, token)).OrderBy(x => x.RowNum).ToArray();
         }
     }
 
