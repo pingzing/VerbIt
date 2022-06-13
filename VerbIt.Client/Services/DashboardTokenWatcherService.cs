@@ -12,16 +12,19 @@ namespace VerbIt.Client.Services
         private readonly NavigationManager _navManager;
         private readonly INetworkService _networkService;
         private readonly JwtAuthStateProvider _jwtAuthStateProvider;
+        private readonly ILogger<DashboardTokenWatcherService> _logger;
 
         public DashboardTokenWatcherService(
             INetworkService networkService,
             JwtAuthStateProvider jwtAuthStateProvider,
-            NavigationManager navManager
+            NavigationManager navManager,
+            ILogger<DashboardTokenWatcherService> logger
         )
         {
             _networkService = networkService;
             _jwtAuthStateProvider = jwtAuthStateProvider;
             _navManager = navManager;
+            _logger = logger;
         }
 
         // Called by the root router's OnNavigateAsync method
@@ -29,12 +32,12 @@ namespace VerbIt.Client.Services
         {
             if (newPath.StartsWith("dashboard"))
             {
-                Console.WriteLine($"Validating token expiry in Dashboard...");
+                _logger.LogDebug($"Validating token expiry in Dashboard...");
                 ClaimsPrincipal user = (await _jwtAuthStateProvider.GetAuthenticationStateAsync()).User;
                 Claim? expiryClaim = user?.Claims?.FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Exp);
                 if (expiryClaim == null)
                 {
-                    Console.WriteLine($"Expiry is null, logging out.");
+                    _logger.LogDebug($"Expiry is null, logging out.");
                     await _networkService.Logout();
                     _navManager.NavigateTo($"/login?originalUrl={Uri.EscapeDataString(_navManager.Uri)}");
                     return;
@@ -43,7 +46,7 @@ namespace VerbIt.Client.Services
                 var expiryTime = DateTimeOffset.FromUnixTimeSeconds(int.Parse(expiryClaim.Value));
                 if (expiryTime < DateTimeOffset.UtcNow)
                 {
-                    Console.WriteLine($"Claim token is expired, logging out.");
+                    _logger.LogDebug($"Claim token is expired, logging out.");
                     await _networkService.Logout();
                     _navManager.NavigateTo($"/login?originalUrl={Uri.EscapeDataString(_navManager.Uri)}");
                 }

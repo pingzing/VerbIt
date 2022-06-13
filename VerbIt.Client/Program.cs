@@ -1,4 +1,6 @@
+using Blazor.Extensions.Logging;
 using Blazored.LocalStorage;
+using Blazored.Modal;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -19,9 +21,18 @@ builder.Services.AddScoped(sp =>
     return new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
 });
 
+if (!builder.HostEnvironment.IsProduction())
+{
+    builder.Services.AddLogging(builder => builder.AddBrowserConsole().SetMinimumLevel(LogLevel.Error));
+}
+else
+{
+    builder.Services.AddLogging(builder => builder.AddBrowserConsole().SetMinimumLevel(LogLevel.Debug));
+}
 builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddBlazoredModal();
 builder.Services.AddScoped<INetworkService, NetworkService>();
 builder.Services.AddSingleton<ICsvImporterService, CsvImporterService>();
 builder.Services.AddScoped<JwtAuthStateProvider>();

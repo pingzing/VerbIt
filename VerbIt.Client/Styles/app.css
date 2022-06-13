@@ -60,6 +60,13 @@ input {
     @apply border-solid border-2 p-0.5;
 }
 
+/* Blazored Modal stuff */
+
+h3.blazored-modal-title {
+    @apply text-lg;
+}
+
+/**/
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;

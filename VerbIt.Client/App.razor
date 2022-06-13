@@ -4,22 +4,25 @@
 @inject DashboardTokenWatcherService _dashboardTokenWatcher;
 
 <CascadingAuthenticationState>
-    <Router AppAssembly="@typeof(App).Assembly" OnNavigateAsync="RouterNavigating">
-        <Found Context="routeData">
-            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />            
-        </Found>
-        <NotFound>
-            <LayoutView Layout="@typeof(MainLayout)">
-                <NotFoundComponent/>
-            </LayoutView>
-        </NotFound>
-    </Router>
+    <CascadingBlazoredModal>
+        <Router AppAssembly="@typeof(App).Assembly" OnNavigateAsync="RouterNavigating">
+            <Found Context="routeData">
+                <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />            
+            </Found>
+            <NotFound>
+                <LayoutView Layout="@typeof(MainLayout)">
+                    <NotFoundComponent/>
+                </LayoutView>
+            </NotFound>
+        </Router>
+    </CascadingBlazoredModal>
 </CascadingAuthenticationState>
 
 @code {
     public void RouterNavigating(NavigationContext context)
-    {        
-        Console.WriteLine($"Router navigation called, going to: {context.Path}");
+    {
+        // We use the router's navigating event rather than the NavigationManager's,
+        // because the NavigationManager doesn't fire events on *browser* navigation.
         _dashboardTokenWatcher.OnNavigated(context.Path);        
     }
 }

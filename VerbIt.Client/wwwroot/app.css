@@ -472,55 +472,37 @@ Ensure the default browser behavior of the `hidden` attribute.
   margin: 1.25rem;
 }
 
-.mx-2 {
-  margin-left: 0.5rem;
-  margin-right: 0.5rem;
-}
-
 .mx-5 {
   margin-left: 1.25rem;
   margin-right: 1.25rem;
-}
-
-.my-5 {
-  margin-top: 1.25rem;
-  margin-bottom: 1.25rem;
-}
-
-.mt-5 {
-  margin-top: 1.25rem;
 }
 
 .mt-2 {
   margin-top: 0.5rem;
 }
 
-.ml-auto {
-  margin-left: auto;
+.mt-5 {
+  margin-top: 1.25rem;
 }
 
 .ml-5 {
   margin-left: 1.25rem;
 }
 
-.ml-4 {
-  margin-left: 1rem;
-}
-
-.mb-2 {
-  margin-bottom: 0.5rem;
+.ml-auto {
+  margin-left: auto;
 }
 
 .ml-2 {
   margin-left: 0.5rem;
 }
 
-.block {
-  display: block;
+.mb-2 {
+  margin-bottom: 0.5rem;
 }
 
-.inline-block {
-  display: inline-block;
+.block {
+  display: block;
 }
 
 .flex {
@@ -543,12 +525,24 @@ Ensure the default browser behavior of the `hidden` attribute.
   width: 100%;
 }
 
+.max-w-prose {
+  max-width: 65ch;
+}
+
+.list-none {
+  list-style-type: none;
+}
+
 .flex-col {
   flex-direction: column;
 }
 
 .items-center {
   align-items: center;
+}
+
+.justify-end {
+  justify-content: flex-end;
 }
 
 .gap-5 {
@@ -567,14 +561,14 @@ Ensure the default browser behavior of the `hidden` attribute.
   border-style: solid;
 }
 
-.px-2 {
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-}
-
 .px-5 {
   padding-left: 1.25rem;
   padding-right: 1.25rem;
+}
+
+.px-2 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 .text-left {
@@ -826,6 +820,15 @@ input {
   border-style: solid;
   padding: 0.125rem;
 }
+
+/* Blazored Modal stuff */
+
+h3.blazored-modal-title {
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+/**/
 
 #blazor-error-ui {
   background: lightyellow;
