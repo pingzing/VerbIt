@@ -26,4 +26,10 @@
 		<ProjectReference Include="..\VerbIt.DataModels\VerbIt.DataModels.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Content Update="wwwroot\scripts\jsCalls.js">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+
 </Project>

@@ -132,6 +132,22 @@ namespace VerbIt.Client.Services
             return updatedList;
         }
 
+        public async Task<bool> DeleteMasterList(Guid listId, CancellationToken token)
+        {
+            var response = await _httpClient.DeleteAsync($"/api/masterlist/{listId}/delete");
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response?.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    RedirectToLogin();
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
         private void RedirectToLogin()
         {
             _navManager.NavigateTo($"/login?originalUrl={Uri.EscapeDataString(_navManager.Uri)}");
@@ -149,5 +165,6 @@ namespace VerbIt.Client.Services
         Task<MasterListRow[]?> GetMasterList(Guid listId, CancellationToken token);
         Task<SavedMasterList[]?> GetMasterLists(CancellationToken token);
         Task<MasterListRow[]?> EditMasterList(Guid listId, EditMasterListRequest editRequest, CancellationToken token);
+        Task<bool> DeleteMasterList(Guid listId, CancellationToken token);
     }
 }

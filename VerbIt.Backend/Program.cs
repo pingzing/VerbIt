@@ -98,6 +98,7 @@ builder.Services.AddAzureClients(clientBuilder =>
 builder.Services.AddSingleton<IVerbitAuthService, VerbitAuthService>();
 builder.Services.AddSingleton<IVerbitRepository, VerbitRepository>();
 builder.Services.AddSingleton<IMasterListService, MasterListService>();
+builder.Services.AddSingleton<ITestsService, TestsService>();
 
 var app = builder.Build();
 

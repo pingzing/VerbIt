@@ -23,3 +23,9 @@ public record EditMasterListRowRequest(
 );
 
 public record AddMasterListRowsRequest([Required] [MinLength(1)] CreateMasterListRowRequest[] Rows);
+
+// --- Tests ---
+
+public record CreateTestRowRequest([Required] [MinLength(1)] string[][] Words);
+
+public record CreateTestRequest([Required] string Name, [Required] [MinLength(1)] CreateTestRowRequest[] Rows);

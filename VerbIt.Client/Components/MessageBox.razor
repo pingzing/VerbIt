@@ -1,28 +1,43 @@
-﻿<body class="max-w-prose">
+﻿@inject IJSRuntime JSRuntime;
+
+<body class="max-w-prose">
     @Message
 </body>
 
 <menu class="flex list-none gap-2 justify-end mt-5">
-    <li><button class="btn-main-action" @onclick="() => _modalInstance.CloseAsync(ModalResult.Ok(true))">@OkText</button></li>
-    <li><button class="btn-main" @onclick="() => _modalInstance.CancelAsync()">@CancelText</button></li>
+    <li><button hidden="@(!_showOkButton)" class="btn-main-action" @onclick="() => _modalInstance.CloseAsync(ModalResult.Ok(true))">@_okText</button></li>
+    <li><button @ref=_cancelButtonReference hidden="@(!_showCancel)" class="btn-main" @onclick="() => _modalInstance.CancelAsync()">@_cancelText</button></li>
 </menu>
 
 @code {
     [CascadingParameter] private BlazoredModalInstance _modalInstance { get; set; } = null!;
-    
+
+    private string _okText { get; set; } = "Ok";
+    private bool _showOkButton { get; set; } = true;
+
+    private string _cancelText { get; set; } = "Cancel";
+    private bool _showCancel { get; set; } = true;
+
+    private ElementReference _cancelButtonReference;
+
     [Parameter] public string Message { get; set; } = null!;
-    [Parameter] public string? OkText { get; set; }
-    [Parameter] public string? CancelText { get; set; }
+    [Parameter] public ButtonState? OkState { get; set; }
+    [Parameter] public ButtonState? CancelState { get; set; }    
 
     protected override void OnParametersSet()
     {
-        if (OkText == null)
+        _okText = OkState?.Text ?? _okText;
+        _showOkButton = OkState?.ShouldDisplay ?? _showOkButton;
+
+        _cancelText = CancelState?.Text ?? _cancelText;
+        _showCancel = CancelState?.ShouldDisplay ?? _showCancel;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (CancelState?.ShouldDisplay == true)
         {
-            OkText = "Ok";
-        }
-        if (CancelText == null)
-        {
-            CancelText = "Cancel";
+            await JSRuntime.InvokeVoidAsync("VerbIt.setFocus", _cancelButtonReference);
         }
     }
 }

@@ -406,6 +406,9 @@ public class VerbitRepository : IVerbitRepository
         }
     }
 
+    // --- Admin Tests (creating, deleting, editing, etc) ---
+    public async Task<TestRow[]> CreateTest(CreateTestRequest request, CancellationToken token) { }
+
     // --- Admin Users ---
     public async Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token)
     {
