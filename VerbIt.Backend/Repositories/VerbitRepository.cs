@@ -2,6 +2,7 @@
 using Azure.Data.Tables;
 using Isopoh.Cryptography.Argon2;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 using System.Text.Json;
 using VerbIt.Backend.Entities;
 using VerbIt.Backend.Models;
@@ -11,9 +12,33 @@ namespace VerbIt.Backend.Repositories;
 
 public class VerbitRepository : IVerbitRepository
 {
+    private const string AdminUserTableName = "AdminUsers";
+
     private const string MasterListTableName = "MasterList";
     private const string SavedMasterListTableName = "SavedMasterLists";
-    private const string AdminUserTableName = "AdminUsers";
+
+    public const string TestsOverviewTableName = "TestsOverview";
+    public const string TestsTableName = "Tests";
+    public const string AvailableTestsTableName = "AvailableTests";
+    public const string TestResultsTableName = "TestResults";
+    public const string TestResultsOverview = "TestResultsOverview";
+
+    // Used to make it easy to create all the tables in the constructor.
+    // New tables must be manually added here.
+    public static readonly string[] _tableNames = new[]
+    {
+        // Users
+        AdminUserTableName,
+        //Master Lists
+        MasterListTableName,
+        SavedMasterListTableName,
+        //Tests
+        TestsOverviewTableName,
+        TestsTableName,
+        AvailableTestsTableName,
+        TestResultsTableName,
+        TestResultsOverview,
+    };
 
     private readonly string _tablePrefix = "";
     private readonly ILogger<VerbitRepository> _logger;
@@ -31,12 +56,9 @@ public class VerbitRepository : IVerbitRepository
 
         // Create all the well-known tables that will need to exist.
         Task.WaitAll(
-            new[]
-            {
-                Task.Run(() => _tableServiceClient.CreateTableIfNotExists($"{_tablePrefix}{MasterListTableName}")),
-                Task.Run(() => _tableServiceClient.CreateTableIfNotExists($"{_tablePrefix}{AdminUserTableName}")),
-                Task.Run(() => _tableServiceClient.CreateTableIfNotExists($"{_tablePrefix}{SavedMasterListTableName}")),
-            }
+            Task.Run(
+                () => _tableNames.Select(tableName => _tableServiceClient.CreateTableIfNotExists($"{_tablePrefix}{tableName}"))
+            )
         );
     }
 
@@ -165,7 +187,8 @@ public class VerbitRepository : IVerbitRepository
                         ListName = createRequest.Name,
                         ListCreationTimestamp = listCreationTimestamp,
                         TotalRows = rowsToCreate.Count,
-                    }
+                    },
+                    token
                 );
 
             return rowsToCreate.Select(x => x.AsDTO()).ToArray();
@@ -359,7 +382,8 @@ public class VerbitRepository : IVerbitRepository
             await foreach (
                 MasterListRowEntity existingListRow in tableClient.QueryAsync<MasterListRowEntity>(
                     x => x.PartitionKey == listId.ToString(),
-                    select: new[] { nameof(MasterListRowEntity.RowNum) }
+                    select: new[] { nameof(MasterListRowEntity.RowNum) },
+                    cancellationToken: token
                 )
             )
             {
@@ -407,7 +431,127 @@ public class VerbitRepository : IVerbitRepository
     }
 
     // --- Admin Tests (creating, deleting, editing, etc) ---
-    public async Task<TestRow[]> CreateTest(CreateTestRequest request, CancellationToken token) { }
+    public async Task<TestRow[]> CreateTest(CreateTestRequest request, CancellationToken token)
+    {
+        TableClient testsTableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestsTableName}");
+        TableClient testOverviewTableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestsOverviewTableName}");
+
+        try
+        {
+            Guid testId = Guid.NewGuid();
+            int rowNum = 1;
+            DateTimeOffset testCreationTimestamp = DateTimeOffset.UtcNow;
+            List<TestRowEntity> rowsToCreate = request.Rows
+                .Select(createRowRequest => createRowRequest.AsEntity(testId, request.Name, rowNum++))
+                .ToList();
+
+            var addEntitiesBatches = rowsToCreate
+                .Select(x => new TableTransactionAction(TableTransactionActionType.Add, x))
+                .Chunk(100)
+                .Select(x => testsTableClient.SubmitTransactionAsync(x, token));
+
+            Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(addEntitiesBatches);
+
+            // Also add an entry to the meta-info table
+            await testOverviewTableClient.AddEntityAsync(
+                new TestOverviewEntity
+                {
+                    TestCreationDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                    TestId = testId,
+                    TestName = request.Name,
+                    TotalRows = rowsToCreate.Count,
+                    IsAvailable = false,
+                    IsRetakeable = false,
+                    SourceList = request.SourceList
+                },
+                token
+            );
+
+            return rowsToCreate.Select(x => x.AsDTO()).ToArray();
+        }
+        catch (Exception ex)
+        {
+            if (ex is TableTransactionFailedException ttfEx)
+            {
+                string errorFragment = "";
+                if (ttfEx.FailedTransactionActionIndex != null)
+                {
+                    errorFragment =
+                        $" Object at index: {JsonSerializer.Serialize(request.Rows[ttfEx.FailedTransactionActionIndex.Value])}";
+                }
+                _logger.LogError(
+                    $"Transaciton failed when creating new table at index: {ttfEx.FailedTransactionActionIndex}.{errorFragment}"
+                );
+
+                // TODO: Investigate what kind of errors we catch here.
+                throw new StatusCodeException(StatusCodes.Status400BadRequest);
+            }
+
+            throw new StatusCodeException(
+                StatusCodes.Status500InternalServerError,
+                $"Failed to create test with name {request.Name} into Tests table.",
+                ex
+            );
+        }
+    }
+
+    public async Task<TestOverviewResponse> GetTestOverview(string? continuationToken, CancellationToken token)
+    {
+        var tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestsOverviewTableName}");
+        try
+        {
+            // We only ever get one page at a time
+            var enumerablePages = tableClient.QueryAsync<TestOverviewEntity>(cancellationToken: token).AsPages(continuationToken);
+            var pageEnumerator = enumerablePages.GetAsyncEnumerator(token);
+            if (!await pageEnumerator.MoveNextAsync())
+            {
+                return new TestOverviewResponse(Array.Empty<TestOverviewEntry>(), null);
+            }
+
+            return new TestOverviewResponse(
+                pageEnumerator.Current.Values.Select(x => x.AsOverviewDTO()).ToArray(),
+                pageEnumerator.Current.ContinuationToken
+            );
+        }
+        catch (RequestFailedException ex)
+        {
+            // TODO: oh god this can fail in so many ways
+            _logger.LogError("GetTestOverview died. {ex}", ex);
+            Debugger.Break(); // look, just go inspect why and construct a sane handler piece by piece as you test this
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, null, ex);
+        }
+    }
+
+    public async Task<TestRowSimple[]> GetTestSimple(Guid testId, CancellationToken token)
+    {
+        var tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestsTableName}");
+        try
+        {
+            AsyncPageable<TestRowEntity> testQuery = tableClient.QueryAsync<TestRowEntity>(
+                x => x.PartitionKey == testId.ToString(),
+                select: new[] { nameof(TestRowEntity.RowNum), nameof(TestRowEntity.WordsJson) },
+                cancellationToken: token
+            );
+
+            List<TestRowSimple> testRows = new List<TestRowSimple>();
+            await foreach (TestRowEntity testRow in testQuery)
+            {
+                testRows.Add(testRow.AsSimpleDTO());
+            }
+
+            return testRows.ToArray();
+        }
+        catch (RequestFailedException ex)
+        {
+            _logger.LogError("Failed to get simple test data. Details: {ex}", ex);
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, null, ex);
+        }
+    }
+
+    public Task<TestRow[]> GetTest(Guid testId, CancellationToken token)
+    {
+        throw new NotImplementedException();
+    }
 
     // --- Admin Users ---
     public async Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token)
@@ -462,6 +606,8 @@ public class VerbitRepository : IVerbitRepository
         }
     }
 
+    // Local utilities and helpers
+
     private async Task UpdateSavedMasterList(Guid listId, string? newName, int? newRowCount, CancellationToken token)
     {
         var savedListclient = _tableServiceClient.GetTableClient($"{_tablePrefix}{SavedMasterListTableName}");
@@ -510,6 +656,12 @@ public interface IVerbitRepository
     );
 
     Task DeleteMasterList(Guid listId, CancellationToken token);
+
+    // Tests
+    Task<TestRow[]> CreateTest(CreateTestRequest request, CancellationToken token);
+    Task<TestRow[]> GetTest(Guid testId, CancellationToken token);
+    Task<TestRowSimple[]> GetTestSimple(Guid testId, CancellationToken token);
+    Task<TestOverviewResponse> GetTestOverview(string? continuationToken, CancellationToken token);
 
     // Admin users
     Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token);

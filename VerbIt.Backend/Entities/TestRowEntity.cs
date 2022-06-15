@@ -47,16 +47,24 @@ namespace VerbIt.Backend.Entities
             return new TestRow(TestId, RowId, TestName, RowNum, deserializedWordList, TestCreationTimestamp);
         }
 
-        public static TestRowEntity FromDTO(TestRow dto)
+        public TestRowSimple AsSimpleDTO()
+        {
+            string[][] deserializedWordList = JsonSerializer.Deserialize<string[][]>(WordsJson)!;
+            return new TestRowSimple(RowNum, deserializedWordList);
+        }
+    }
+
+    public static class CreateTestRowExtensions
+    {
+        public static TestRowEntity AsEntity(this CreateTestRowRequest request, Guid testId, string testName, int rowNum)
         {
             return new TestRowEntity
             {
-                TestId = dto.TestId,
-                RowId = dto.RowId,
-                TestName = dto.TestName,
-                RowNum = dto.RowNum,
-                WordsJson = JsonSerializer.Serialize(dto.Words),
-                TestCreationTimestamp = dto.TestCreationTimestamp,
+                TestId = testId,
+                RowId = Guid.NewGuid(),
+                TestName = testName,
+                RowNum = rowNum,
+                WordsJson = JsonSerializer.Serialize(request.Words)
             };
         }
     }

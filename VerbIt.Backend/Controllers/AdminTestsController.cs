@@ -19,9 +19,35 @@ public class AdminTestsController : ControllerBase
         _testsService = testsService;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<string>> GetTest()
+    [HttpPost]
+    [Route("create")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<TestRow[]>> CreateTest(CreateTestRequest request, CancellationToken token)
     {
-        return "hi!";
+        var createdTest = await _testsService.CreateTest(request, token);
+        return CreatedAtAction(nameof(AdminTestsController.GetTestDetails), new { testId = createdTest[0].TestId }, createdTest);
+    }
+
+    [HttpGet]
+    [Route("overview")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<TestOverviewResponse>> GetTestOverview(
+        [FromQuery(Name = "con")] string? continuationToken,
+        CancellationToken token
+    )
+    {
+        return await _testsService.GetTestOverview(continuationToken, token);
+    }
+
+    [HttpGet]
+    [Route("{testId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<TestWithResults> GetTestDetails(Guid testId, CancellationToken token)
+    {
+        return await _testsService.GetTestDetails(testId, token);
     }
 }

@@ -4,7 +4,7 @@ using VerbIt.DataModels;
 
 namespace VerbIt.Backend.Entities
 {
-    public class TestInfoEntity : ITableEntity
+    public class TestOverviewEntity : ITableEntity
     {
         public string PartitionKey { get; set; } = null!;
         public string RowKey { get; set; } = null!;
@@ -16,11 +16,14 @@ namespace VerbIt.Backend.Entities
         /// </summary>
         public DateOnly TestCreationDate
         {
-            get => DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(long.Parse(PartitionKey)).UtcDateTime);
+            // Convert the date to ticks, but subtracted from max, so that
+            // when Table Storage returns rows, we always get them in descending order.
+            get =>
+                DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(long.MaxValue - long.Parse(PartitionKey)).UtcDateTime);
             set =>
-                PartitionKey = new DateTimeOffset(value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc))
-                    .ToUnixTimeSeconds()
-                    .ToString();
+                PartitionKey = (
+                    long.MaxValue - new DateTimeOffset(value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)).ToUnixTimeSeconds()
+                ).ToString();
         }
 
         /// <summary>
@@ -43,9 +46,17 @@ namespace VerbIt.Backend.Entities
         /// </summary>
         public DateTimeOffset TestCreationTimestamp { get; set; }
 
-        public AdminTestInfo AsAdminDTO()
+        public TestOverviewEntry AsOverviewDTO()
         {
-            return new AdminTestInfo(TestId, TestName, TotalRows, TestCreationTimestamp, IsAvailable, IsRetakeable, SourceList);
+            return new TestOverviewEntry(
+                TestId,
+                TestName,
+                TotalRows,
+                TestCreationTimestamp,
+                IsAvailable,
+                IsRetakeable,
+                SourceList
+            );
         }
 
         public UserTestInfo AsUserDTO()

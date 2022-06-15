@@ -28,4 +28,8 @@ public record AddMasterListRowsRequest([Required] [MinLength(1)] CreateMasterLis
 
 public record CreateTestRowRequest([Required] [MinLength(1)] string[][] Words);
 
-public record CreateTestRequest([Required] string Name, [Required] [MinLength(1)] CreateTestRowRequest[] Rows);
+public record CreateTestRequest(
+    [Required] string Name,
+    [Required] Guid SourceList,
+    [Required] [MinLength(1)] CreateTestRowRequest[] Rows
+);
