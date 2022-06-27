@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using VerbIt.Backend.Repositories;
+﻿using VerbIt.Backend.Repositories;
 using VerbIt.DataModels;
 
 namespace VerbIt.Backend.Services;
@@ -20,20 +19,37 @@ public class TestsService : ITestsService
         return _repository.CreateTest(request, token);
     }
 
+    // Intended for on a "Tests" landing page that shows a pageable list of all tests
     public Task<TestOverviewResponse> GetTestOverview(string? continuationToken, CancellationToken token)
     {
         return _repository.GetTestOverview(continuationToken, token);
     }
 
-    public Task<TestWithResults> GetTestWithResults(Guid testId, CancellationToken token)
+    // Displayed to the admin user when they click on a test
+    public async Task<TestWithResults> GetTestWithResults(Guid testId, CancellationToken token)
     {
-        // Get the questions about a test, and all the test results that exist for this test
+        var testOverviewTask = _repository.GetSingleTestOverview(testId, token);
+        var simpleQuestionsTask = _repository.GetTestSimple(testId, token);
+        var resultsOverviewTask = _repository.GetTestResultsOverview(testId, token);
+
+        await Task.WhenAll(testOverviewTask, simpleQuestionsTask, resultsOverviewTask);
+
+        return new TestWithResults(
+            testId,
+            testOverviewTask.Result.TestName,
+            testOverviewTask.Result.TestCreationTimestamp,
+            testOverviewTask.Result.IsAvailable,
+            testOverviewTask.Result.IsRetakeable,
+            testOverviewTask.Result.SourceList,
+            simpleQuestionsTask.Result,
+            resultsOverviewTask.Result
+        );
     }
 }
 
 public interface ITestsService
 {
     Task<TestRow[]> CreateTest(CreateTestRequest request, CancellationToken token);
-    Task<TestWithResults> GetTestDetails(Guid testId, CancellationToken token);
+    Task<TestWithResults> GetTestWithResults(Guid testId, CancellationToken token);
     Task<TestOverviewResponse> GetTestOverview(string? continuationToken, CancellationToken token);
 }

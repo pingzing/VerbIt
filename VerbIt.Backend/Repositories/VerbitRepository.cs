@@ -21,7 +21,7 @@ public class VerbitRepository : IVerbitRepository
     public const string TestsTableName = "Tests";
     public const string AvailableTestsTableName = "AvailableTests";
     public const string TestResultsTableName = "TestResults";
-    public const string TestResultsOverview = "TestResultsOverview";
+    public const string TestResultsOverviewTableName = "TestResultsOverview";
 
     // Used to make it easy to create all the tables in the constructor.
     // New tables must be manually added here.
@@ -37,7 +37,7 @@ public class VerbitRepository : IVerbitRepository
         TestsTableName,
         AvailableTestsTableName,
         TestResultsTableName,
-        TestResultsOverview,
+        TestResultsOverviewTableName,
     };
 
     private readonly string _tablePrefix = "";
@@ -522,6 +522,38 @@ public class VerbitRepository : IVerbitRepository
         }
     }
 
+    public async Task<TestOverviewEntry> GetSingleTestOverview(Guid testId, CancellationToken token)
+    {
+        var tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestsOverviewTableName}");
+        try
+        {
+            await foreach (
+                TestOverviewEntity? overview in tableClient.QueryAsync<TestOverviewEntity>(
+                    x => x.RowKey == testId.ToString(),
+                    cancellationToken: token
+                )
+            )
+            {
+                if (overview == null)
+                {
+                    throw new StatusCodeException(StatusCodes.Status404NotFound);
+                }
+
+                return overview.AsOverviewDTO();
+            }
+
+            // If we make it through the loop without finding anything, it's 404 time
+            throw new StatusCodeException(StatusCodes.Status404NotFound);
+        }
+        catch (RequestFailedException ex)
+        {
+            // TODO: oh god this can fail in so many ways
+            _logger.LogError("GetSingleTestOverview died. {ex}", ex);
+            Debugger.Break(); // look, just go inspect why and construct a sane handler piece by piece as you test this
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, null, ex);
+        }
+    }
+
     public async Task<TestRowSimple[]> GetTestSimple(Guid testId, CancellationToken token)
     {
         var tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestsTableName}");
@@ -548,9 +580,29 @@ public class VerbitRepository : IVerbitRepository
         }
     }
 
-    public Task<TestRow[]> GetTest(Guid testId, CancellationToken token)
+    public async Task<TestResultsOverviewRow[]> GetTestResultsOverview(Guid testOrUserId, CancellationToken token)
     {
-        throw new NotImplementedException();
+        var tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestResultsOverviewTableName}");
+        try
+        {
+            List<TestResultsOverviewEntity> resultsOverviewList = new();
+            await foreach (
+                var resultOverview in tableClient.QueryAsync<TestResultsOverviewEntity>(
+                    x => x.PartitionKey == testOrUserId.ToString(),
+                    cancellationToken: token
+                )
+            )
+            {
+                resultsOverviewList.Add(resultOverview);
+            }
+
+            return resultsOverviewList.Select(x => x.AsDTO()).ToArray();
+        }
+        catch (RequestFailedException ex)
+        {
+            _logger.LogError("Failed to get test results overview by test ID. Details: {ex}", ex);
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, null, ex);
+        }
     }
 
     // --- Admin Users ---
@@ -659,9 +711,10 @@ public interface IVerbitRepository
 
     // Tests
     Task<TestRow[]> CreateTest(CreateTestRequest request, CancellationToken token);
-    Task<TestRow[]> GetTest(Guid testId, CancellationToken token);
     Task<TestRowSimple[]> GetTestSimple(Guid testId, CancellationToken token);
+    Task<TestOverviewEntry> GetSingleTestOverview(Guid testId, CancellationToken token);
     Task<TestOverviewResponse> GetTestOverview(string? continuationToken, CancellationToken token);
+    Task<TestResultsOverviewRow[]> GetTestResultsOverview(Guid testOrUserId, CancellationToken token);
 
     // Admin users
     Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token);

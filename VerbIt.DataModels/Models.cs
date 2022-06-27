@@ -48,12 +48,12 @@ public record TestWithResults(
     bool IsRetakeable,
     Guid SourceList,
     TestRowSimple[] Questions,
-    TestResultsSummaryRow[] ResultsSummaries
+    TestResultsOverviewRow[] ResultsSummaries
 );
 
 public record TestRowSimple(int RowNum, string[][] Words);
 
-public record TestResultsSummaryRow(
+public record TestResultsOverviewRow(
     Guid StudentId,
     string StudentMoniker,
     int StudentScore,
