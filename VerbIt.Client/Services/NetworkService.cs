@@ -165,7 +165,7 @@ public class NetworkService : INetworkService
     public async Task<TestOverviewResponse?> GetTestOverview(string? continuationToken, CancellationToken token)
     {
         string queryFragment = continuationToken != null ? $"?con={continuationToken}" : "";
-        var response = await _httpClient.GetAsync($"/api/tests/overview{queryFragment}");
+        var response = await _httpClient.GetAsync($"/api/tests/overview{queryFragment}", token);
         if (!response.IsSuccessStatusCode)
         {
             if (response?.StatusCode == HttpStatusCode.Unauthorized)
@@ -180,6 +180,23 @@ public class NetworkService : INetworkService
             await response.Content.ReadFromJsonAsync<TestOverviewResponse>(cancellationToken: token)
         )!;
         return rowsAndToken;
+    }
+
+    public async Task<TestWithResults?> GetTestDetails(Guid testId, CancellationToken token)
+    {
+        var response = await _httpClient.GetAsync($"/api/tests/{testId}", token);
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response?.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                RedirectToLogin();
+            }
+
+            return null;
+        }
+
+        TestWithResults testDetails = (await response.Content.ReadFromJsonAsync<TestWithResults>(cancellationToken: token))!;
+        return testDetails;
     }
 
     private void RedirectToLogin()
@@ -204,4 +221,5 @@ public interface INetworkService
     // Tests
     Task<TestRow[]?> CreateTest(CreateTestRequest createTestRequest, CancellationToken token);
     Task<TestOverviewResponse?> GetTestOverview(string? continuationToken, CancellationToken token);
+    Task<TestWithResults?> GetTestDetails(Guid testId, CancellationToken token);
 }

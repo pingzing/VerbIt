@@ -10,6 +10,9 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 {
     public partial class ViewSingleList : ComponentBase
     {
+        [CascadingParameter]
+        private DashboardLayout Layout { get; set; } = null!;
+
         [Inject]
         private NavigationManager NavManager { get; set; } = null!;
 
@@ -41,6 +44,9 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 
         protected override async Task OnInitializedAsync()
         {
+            Layout.Title = $"Master Lists - Loading...";
+            Layout.BackButtonText = "↑ Go up to Master Lists";
+
             if (!Guid.TryParse(ListId, out Guid listId))
             {
                 return;
@@ -57,6 +63,7 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
             _listExists = true;
             RowList = new List<MasterListRow>(rowList);
             ListName = RowList[0].ListName;
+            Layout.Title = $"Master Lists - {ListName}";
 
             var thisUri = NavManager.ToAbsoluteUri(NavManager.Uri);
             if (QueryHelpers.ParseNullableQuery(thisUri.Query)?.TryGetValue("editMode", out var editMode) == true)

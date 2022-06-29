@@ -36,7 +36,8 @@ public record TestOverviewEntry(
     DateTimeOffset TestCreationTimestamp,
     bool IsAvailable,
     bool IsRetakeable,
-    Guid SourceList
+    Guid SourceList,
+    string SourceListName
 );
 
 // Detailed view of a test, when selected directly

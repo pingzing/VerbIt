@@ -17,6 +17,9 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
         private const string UploadCsvDefaultClass = "btn-input";
         private const string UploadCsvDisabledClass = "btn-input-disabled";
 
+        [CascadingParameter]
+        private DashboardLayout Layout { get; set; } = null!;
+
         [Inject]
         private NavigationManager NavManager { get; set; } = null!;
 
@@ -41,6 +44,9 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 
         protected override async Task OnInitializedAsync()
         {
+            Layout.Title = "Master Lists - Create";
+            Layout.BackButtonText = "↑ Go up to Master Lists";
+
             if (await _localStorageService.ContainKeyAsync(PrevSavedMasterList))
             {
                 string savedListString = await _localStorageService.GetItemAsync<string>(PrevSavedMasterList);

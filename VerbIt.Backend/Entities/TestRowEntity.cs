@@ -56,7 +56,13 @@ namespace VerbIt.Backend.Entities
 
     public static class CreateTestRowExtensions
     {
-        public static TestRowEntity AsEntity(this CreateTestRowRequest request, Guid testId, string testName, int rowNum)
+        public static TestRowEntity AsEntity(
+            this CreateTestRowRequest request,
+            Guid testId,
+            string testName,
+            int rowNum,
+            DateTimeOffset testCreationTimestamp
+        )
         {
             return new TestRowEntity
             {
@@ -64,6 +70,7 @@ namespace VerbIt.Backend.Entities
                 RowId = Guid.NewGuid(),
                 TestName = testName,
                 RowNum = rowNum,
+                TestCreationTimestamp = testCreationTimestamp,
                 WordsJson = JsonSerializer.Serialize(request.Words)
             };
         }

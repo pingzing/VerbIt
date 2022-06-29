@@ -1,13 +1,16 @@
 ﻿@inject NavigationManager _navManager;
 @implements IDisposable;
 
-<NavLink class="@($"{Class} block")" href="@($"{string.Join(string.Empty, new Uri(_navManager.Uri).Segments[..^1])}")">
+@*Some intense string interpolation down below. It needs to:
+1) Get all but the last segment in the current URI, as that's "one level up"
+2) Chop off the last character, because we don't want to keep the trailing slash, as those will just keep accumulating*@
+<NavLink class="@($"{Class} block")" href="@($"{string.Join(string.Empty, new Uri(_navManager.Uri).Segments[..^1])}"[..^1])">
     @(Text)
 </NavLink>
 
 @code {
     [Parameter]
-    public string Text { get; set; } = "← Go back";
+    public string Text { get; set; } = "↑ Go up a level";
 
     [Parameter]
     public string Class { get; set; } = "mt-2";

@@ -1,15 +1,11 @@
 ﻿@page "/dashboard"
 
-<main class="flex flex-col items-center">
-    <h3 class="text-lg mt-5">Tests</h3>
-    <section>
-        <NavLink href=""><span>Give</span></NavLink>
-        <NavLink href=""><span>Create</span></NavLink>
-        <NavLink href=""><span>View Created</span></NavLink>
-        <NavLink href=""><span>Delete</span></NavLink>
-    </section>
+<main class="flex flex-col items-center">    
+    <NavLink href="@($"{NavManager.Uri}/tests")">
+        <h3 class="text-lg mt-5">Tests</h3>
+    </NavLink>
           
-    <NavLink href="@(MasterListUri)">
+    <NavLink href="@($"{NavManager.Uri}/masterlists")">
         <h3 class="text-lg mt-5">
             Master Lists
         </h3>

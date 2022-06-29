@@ -1,5 +1,6 @@
 ﻿using Azure;
 using Azure.Data.Tables;
+using Azure.Data.Tables.Models;
 using Isopoh.Cryptography.Argon2;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
@@ -55,11 +56,11 @@ public class VerbitRepository : IVerbitRepository
         _tablePrefix = settings.Value.TablePrefix;
 
         // Create all the well-known tables that will need to exist.
-        Task.WaitAll(
-            Task.Run(
-                () => _tableNames.Select(tableName => _tableServiceClient.CreateTableIfNotExists($"{_tablePrefix}{tableName}"))
-            )
-        );
+        Task<Response<TableItem>>[] createTableTasks = _tableNames
+            .Select(tableName => _tableServiceClient.CreateTableIfNotExistsAsync($"{_tablePrefix}{tableName}"))
+            .ToArray();
+
+        Task.WaitAll(createTableTasks);
     }
 
     // --- Auth ---
@@ -442,7 +443,7 @@ public class VerbitRepository : IVerbitRepository
             int rowNum = 1;
             DateTimeOffset testCreationTimestamp = DateTimeOffset.UtcNow;
             List<TestRowEntity> rowsToCreate = request.Rows
-                .Select(createRowRequest => createRowRequest.AsEntity(testId, request.Name, rowNum++))
+                .Select(createRowRequest => createRowRequest.AsEntity(testId, request.Name, rowNum++, testCreationTimestamp))
                 .ToList();
 
             var addEntitiesBatches = rowsToCreate
@@ -452,17 +453,19 @@ public class VerbitRepository : IVerbitRepository
 
             Response<IReadOnlyList<Response>>[] responses = await Task.WhenAll(addEntitiesBatches);
 
-            // Also add an entry to the meta-info table
+            // Also add an entry to the overview table
             await testOverviewTableClient.AddEntityAsync(
                 new TestOverviewEntity
                 {
-                    TestCreationDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                    TestCreationDate = DateOnly.FromDateTime(testCreationTimestamp.UtcDateTime),
+                    TestCreationTimestamp = testCreationTimestamp,
                     TestId = testId,
                     TestName = request.Name,
                     TotalRows = rowsToCreate.Count,
                     IsAvailable = false,
                     IsRetakeable = false,
-                    SourceList = request.SourceList
+                    SourceList = request.SourceList,
+                    SourceListName = request.SourceListName,
                 },
                 token
             );
@@ -569,6 +572,10 @@ public class VerbitRepository : IVerbitRepository
             await foreach (TestRowEntity testRow in testQuery)
             {
                 testRows.Add(testRow.AsSimpleDTO());
+            }
+            if (!testRows.Any())
+            {
+                throw new StatusCodeException(StatusCodes.Status404NotFound);
             }
 
             return testRows.ToArray();

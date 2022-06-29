@@ -4,8 +4,36 @@
 
 @*shared dashboard layout stuff*@
 
-<BackButton class="mt-5 mx-5"/>
+@*Cascade this Layout down to children, so they can view and edit Title and Back Button text.*@
+<CascadingValue Value="this">
+    <PageTitle>@Title</PageTitle>
+    <BackButton class="mt-5 mx-5" Text="@BackButtonText"/>
 
-<h2 class="text-xl mx-5">Dashboard</h2>
+    <h2 class="text-xl mx-5">Dashboard</h2>
 
-@Body
+    @Body
+</CascadingValue>
+
+@code {
+    private string _title = "VerbIt";
+    public string Title 
+    {
+        get => _title;
+        set 
+        {
+            _title = value;
+            InvokeAsync(() => StateHasChanged());
+        }
+    }
+
+    private string _backButtonText = "↑ Go up a level";
+    public string BackButtonText 
+    {
+        get => _backButtonText;
+        set
+        {
+            _backButtonText = value;
+            InvokeAsync(() => StateHasChanged());
+        }
+    }
+}

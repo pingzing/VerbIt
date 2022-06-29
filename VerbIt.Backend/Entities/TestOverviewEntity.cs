@@ -1,5 +1,6 @@
 ﻿using Azure;
 using Azure.Data.Tables;
+using System.Runtime.Serialization;
 using VerbIt.DataModels;
 
 namespace VerbIt.Backend.Entities
@@ -14,6 +15,7 @@ namespace VerbIt.Backend.Entities
         /// <summary>
         /// Convenience property for <see cref="PartitionKey"/>.
         /// </summary>
+        [IgnoreDataMember]
         public DateOnly TestCreationDate
         {
             // Convert the date to ticks, but subtracted from max, so that
@@ -29,6 +31,7 @@ namespace VerbIt.Backend.Entities
         /// <summary>
         /// Convenience property for <see cref="RowKey"/>.
         /// </summary>
+        [IgnoreDataMember]
         public Guid TestId
         {
             get => Guid.Parse(RowKey);
@@ -40,6 +43,7 @@ namespace VerbIt.Backend.Entities
         public bool IsAvailable { get; set; }
         public bool IsRetakeable { get; set; }
         public Guid SourceList { get; set; }
+        public string SourceListName { get; set; } = null!;
 
         /// <summary>
         /// Essentially the same as TestCreationDate, but easier to serialize.
@@ -55,7 +59,8 @@ namespace VerbIt.Backend.Entities
                 TestCreationTimestamp,
                 IsAvailable,
                 IsRetakeable,
-                SourceList
+                SourceList,
+                SourceListName
             );
         }
 

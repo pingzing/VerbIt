@@ -48,6 +48,6 @@ public class AdminTestsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<TestWithResults> GetTestDetails(Guid testId, CancellationToken token)
     {
-        return await _testsService.GetTestDetails(testId, token);
+        return await _testsService.GetTestWithResults(testId, token);
     }
 }

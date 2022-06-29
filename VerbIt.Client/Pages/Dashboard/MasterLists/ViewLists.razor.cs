@@ -12,6 +12,9 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
         [CascadingParameter]
         private IModalService _modalService { get; set; } = null!;
 
+        [CascadingParameter]
+        private DashboardLayout Layout { get; set; } = null!;
+
         [Inject]
         private NavigationManager NavManager { get; set; } = null!;
 
@@ -20,8 +23,11 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
 
         private List<SavedMasterList>? SavedLists { get; set; } = null;
 
-        protected override async Task OnParametersSetAsync()
+        protected override async Task OnInitializedAsync()
         {
+            Layout.Title = "Master Lists";
+            Layout.BackButtonText = "↑ Go up to Dashboard";
+
             var getListsResult = await _networkService.GetMasterLists(CancellationToken.None);
             if (getListsResult == null)
             {

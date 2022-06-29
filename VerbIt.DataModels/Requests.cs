@@ -31,5 +31,6 @@ public record CreateTestRowRequest([Required] [MinLength(1)] string[][] Words);
 public record CreateTestRequest(
     [Required] string Name,
     [Required] Guid SourceList,
+    [Required] string SourceListName,
     [Required] [MinLength(1)] CreateTestRowRequest[] Rows
 );
