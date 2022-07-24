@@ -47,11 +47,21 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
 
         private async Task AvailableChanged(TestOverviewEntryVM changedEntry)
         {
-            // TODO: Show loading indicator, disable checkbox
-
+            // TODO: Ask are you sure?
             changedEntry.IsAvailable = !changedEntry.IsAvailable;
+            await CallEditOverview(changedEntry, CancellationToken.None);
+        }
 
-            // TODO: Ask are you sure? make network call
+        private async Task RetakeableChanged(TestOverviewEntryVM changedEntry)
+        {
+            // TODO: Ask are you sure?
+            changedEntry.IsRetakeable = !changedEntry.IsRetakeable;
+            await CallEditOverview(changedEntry, CancellationToken.None);
+        }
+
+        private async Task CallEditOverview(TestOverviewEntryVM changedEntry, CancellationToken token)
+        {
+            // TODO: Show loading indicator, disable row
 
             var editRequest = new EditTestOverviewRequest(
                 changedEntry.TestCreationTimestamp,
@@ -62,19 +72,12 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             bool success = await _networkService.EditTestOverview(editRequest, CancellationToken.None);
             if (!success)
             {
-                // TODO: Hide loading indicator, reenable checkbox
+                // TODO: Hide loading indicator, reenable row
                 // TODO: Show sadness
                 return;
             }
 
             // TODO: Hide loading indicator, reenable checkbox
-        }
-
-        private async Task RetakeableChanged(TestOverviewEntryVM changedEntry)
-        {
-            changedEntry.IsRetakeable = !changedEntry.IsRetakeable;
-
-            // TODO: Ask are you sure? make network call
         }
 
         private async Task DeleteTest(TestOverviewEntryVM testToDelete) { }
