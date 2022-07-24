@@ -50,4 +50,15 @@ public class AdminTestsController : ControllerBase
     {
         return await _testsService.GetTestWithResults(testId, token);
     }
+
+    [HttpPatch]
+    [Route("overview/{testId}/edit")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> EditTestOverview(EditTestOverviewRequest request, CancellationToken token)
+    {
+        await _testsService.EditTestOverview(request, token);
+        return Ok();
+    }
 }

@@ -1,15 +1,19 @@
 ﻿@page "/login"
 
-<h3>Login</h3>
+<h3 class="mt-2 ml-5 text-3xl">Login</h3>
 
-<div>
+<div class="@ErrorLabelHidden mx-5 text-red-500">@ErrorLabel</div>
+
+<div class="mx-5 my-2">
     <label for="usernameInput">Username</label>
     <input id="usernameInput" @bind="_username" type="text" class="border-solid"/>
 </div>
 
-<div>
+<div class="mx-5 my-2">
     <label for="passwordInput">Password</label>
     <input id="passwordInput" @bind="_password" type="password"/>
 </div>
 
-<button class="btn-main" type="button" @onclick="CallLogin">Login</button>
+<button class="btn-main mx-5" type="button" disabled="@IsWaitingForNetwork" @onclick="CallLogin">Login</button>
+
+<div class="mx-5" hidden="@(!IsWaitingForNetwork)">Logging in...</div>

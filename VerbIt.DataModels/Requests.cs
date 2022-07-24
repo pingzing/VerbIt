@@ -34,3 +34,10 @@ public record CreateTestRequest(
     [Required] string SourceListName,
     [Required] [MinLength(1)] CreateTestRowRequest[] Rows
 );
+
+public record EditTestOverviewRequest(
+    [Required] DateTimeOffset TestCreationTimestamp,
+    [Required] Guid TestId,
+    bool? NewAvailable,
+    bool? NewRetakeable
+);

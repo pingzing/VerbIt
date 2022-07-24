@@ -45,6 +45,11 @@ public class TestsService : ITestsService
             resultsOverviewTask.Result
         );
     }
+
+    public async Task EditTestOverview(EditTestOverviewRequest request, CancellationToken token)
+    {
+        await _repository.EditTestOverview(request, token);
+    }
 }
 
 public interface ITestsService
@@ -52,4 +57,5 @@ public interface ITestsService
     Task<TestRow[]> CreateTest(CreateTestRequest request, CancellationToken token);
     Task<TestWithResults> GetTestWithResults(Guid testId, CancellationToken token);
     Task<TestOverviewResponse> GetTestOverview(string? continuationToken, CancellationToken token);
+    Task EditTestOverview(EditTestOverviewRequest request, CancellationToken token);
 }

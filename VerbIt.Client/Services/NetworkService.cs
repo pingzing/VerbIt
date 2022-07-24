@@ -182,6 +182,24 @@ public class NetworkService : INetworkService
         return rowsAndToken;
     }
 
+    public async Task<bool> EditTestOverview(EditTestOverviewRequest request, CancellationToken token)
+    {
+        string serializedRequest = JsonSerializer.Serialize(request);
+        StringContent editContent = new StringContent(serializedRequest, Encoding.UTF8, "application/json");
+        var response = await _httpClient.PatchAsync($"/api/tests/overview/{request.TestId.ToString()}/edit", editContent, token);
+        if (!response.IsSuccessStatusCode)
+        {
+            if (response?.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                RedirectToLogin();
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
     public async Task<TestWithResults?> GetTestDetails(Guid testId, CancellationToken token)
     {
         var response = await _httpClient.GetAsync($"/api/tests/{testId}", token);
@@ -221,5 +239,6 @@ public interface INetworkService
     // Tests
     Task<TestRow[]?> CreateTest(CreateTestRequest createTestRequest, CancellationToken token);
     Task<TestOverviewResponse?> GetTestOverview(string? continuationToken, CancellationToken token);
+    Task<bool> EditTestOverview(EditTestOverviewRequest request, CancellationToken token);
     Task<TestWithResults?> GetTestDetails(Guid testId, CancellationToken token);
 }

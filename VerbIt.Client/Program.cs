@@ -14,7 +14,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-TypeDescriptor.AddAttributes(typeof(List<string>), new TypeConverterAttribute(typeof(StringCollectionToStringConverter)));
+TypeDescriptor.AddAttributes(typeof(List<string>), new TypeConverterAttribute(typeof(StringListToStringConverter)));
 
 builder.Services.AddScoped(sp =>
 {

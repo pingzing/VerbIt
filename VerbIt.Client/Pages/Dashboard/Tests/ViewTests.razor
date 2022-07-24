@@ -27,13 +27,15 @@
             <tbody>
                 @foreach (var test in TestsList)
                 {
-                    TestOverviewEntry localEntry = test;
+                    TestOverviewEntryVM localEntry = test;
                     <tr>
                         <td>
                             <NavLink href="@($"{NavManager.Uri}/{localEntry.TestId}")">@localEntry.TestName</NavLink>
                         </td>
                         <td class="text-center">@(localEntry.TotalRows)</td>
-                        <td class="text-center">@(localEntry.IsAvailable)</td>
+                        <td class="text-center">
+                            <input type="checkbox" checked="@localEntry.IsAvailable" @onchange="() => AvailableChanged(localEntry)">
+                        </td>
                         <td class="text-center">@(localEntry.IsRetakeable)</td>
                         <td class="text-center">
                             <NavLink href="@($"/dashboard/masterlists/{localEntry.SourceList}")">@(localEntry.SourceListName)</NavLink>

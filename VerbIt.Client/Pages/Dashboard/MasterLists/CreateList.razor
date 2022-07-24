@@ -4,7 +4,7 @@
 
 @if (RowList != null)
 {
-    <section id="controls" class="flex gap-2 m-5 mx-5">
+    <section id="controls" class="flex gap-2 m-5">
         <button class="btn-main" disabled="@IsSaving" @onclick="AddRowClicked">Add row</button>
         @*Here be styling dragons to make a fileinput behave like a button. Check app.css for details.*@
         <label class="@(UploadCsvButtonClass)" for="CsvFileBrowser">

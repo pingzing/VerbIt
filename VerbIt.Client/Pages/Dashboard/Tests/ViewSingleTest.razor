@@ -1,0 +1,31 @@
+﻿@page "/dashboard/tests/{testId}"
+
+@if (_testExists && _testId != null)
+{
+    <h3 class="mt-2 ml-5 text-3xl">Test - @TestName</h3>
+    <h4 class="mt-2 ml-5 text-2xl">Questions</h4>
+
+    <section id="testQuestions" class="flex flex-col px-2">
+        <table class="w-full">
+            @foreach (var row in TestQuestions)
+            {
+                var localRow = row;
+                <tr>
+                    <th scope="row" class="text-left">@localRow.RowNum</th>
+                    @foreach (string[] cellWords in localRow.Words)
+                    {
+                        <td>@string.Join(" | ", cellWords)</td>
+                    }
+                </tr>
+            }
+        </table>
+    </section>
+
+    <section id="testResultsOverview">
+        @*Get (all?) test results from the TestResultsOverview table for this test, and display them here*@
+    </section>
+}
+else 
+{
+    <NotFoundComponent/>
+}

@@ -7,7 +7,7 @@ internal class CreateListRowVM
 {
     public bool Editable { get; set; } = false;
 
-    [TypeConverter(typeof(StringCollectionToStringConverter))]
+    [TypeConverter(typeof(StringListToStringConverter))]
     public List<List<string>> Words { get; set; } = null!;
 
     internal static CreateListRowVM GetDefaultRow() =>

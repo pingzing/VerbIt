@@ -18,14 +18,8 @@ namespace VerbIt.Backend.Entities
         [IgnoreDataMember]
         public DateOnly TestCreationDate
         {
-            // Convert the date to ticks, but subtracted from max, so that
-            // when Table Storage returns rows, we always get them in descending order.
-            get =>
-                DateOnly.FromDateTime(DateTimeOffset.FromUnixTimeSeconds(long.MaxValue - long.Parse(PartitionKey)).UtcDateTime);
-            set =>
-                PartitionKey = (
-                    long.MaxValue - new DateTimeOffset(value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)).ToUnixTimeSeconds()
-                ).ToString();
+            get => ConvertFromPartitionKey(PartitionKey);
+            set => PartitionKey = ConvertToPartitionKey(value);
         }
 
         /// <summary>
@@ -67,6 +61,24 @@ namespace VerbIt.Backend.Entities
         public UserTestInfo AsUserDTO()
         {
             return new UserTestInfo(TestId, TestName, TotalRows, IsRetakeable);
+        }
+
+        public static string ConvertToPartitionKey(DateOnly date)
+        {
+            // Convert the date to Unix Seconds, but subtracted from max, so that
+            // when Table Storage returns rows, we always get them in descending order.
+            return (
+                long.MaxValue - new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)).ToUnixTimeSeconds()
+            ).ToString();
+        }
+
+        public static DateOnly ConvertFromPartitionKey(string partitionKey)
+        {
+            // Convert the date to ticks, but subtracted from max, so that
+            // when Table Storage returns rows, we always get them in descending order.
+            return DateOnly.FromDateTime(
+                DateTimeOffset.FromUnixTimeSeconds(long.MaxValue - long.Parse(partitionKey)).UtcDateTime
+            );
         }
     }
 }

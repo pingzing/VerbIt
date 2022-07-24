@@ -7,7 +7,7 @@ public class EditListRowVM
 {
     public bool Editable { get; set; } = false;
 
-    [TypeConverter(typeof(StringCollectionToStringConverter))]
+    [TypeConverter(typeof(StringListToStringConverter))]
     public List<List<string>> Words { get; set; } = null!;
     public Guid RowId { get; set; }
     public int RowNum { get; set; }

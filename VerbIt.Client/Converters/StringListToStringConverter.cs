@@ -6,7 +6,7 @@ namespace VerbIt.Client.Converters
     // Used for MasterLists to display the lists of acceptable words in a cell.
     // A Pipe (|) value is used as a separator between valid values.
     // Gets registed in Program.cs.
-    public class StringCollectionToStringConverter : TypeConverter
+    public class StringListToStringConverter : TypeConverter
     {
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
             sourceType == typeof(string) || sourceType == typeof(List<string>);

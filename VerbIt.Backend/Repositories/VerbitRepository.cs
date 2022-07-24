@@ -557,6 +557,37 @@ public class VerbitRepository : IVerbitRepository
         }
     }
 
+    public async Task EditTestOverview(EditTestOverviewRequest request, CancellationToken token)
+    {
+        var tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestsOverviewTableName}");
+        DateOnly date = DateOnly.FromDateTime(request.TestCreationTimestamp.Date);
+        string partitionKey = TestOverviewEntity.ConvertToPartitionKey(date);
+
+        var updateEntity = new TableEntity(partitionKey, request.TestId.ToString())
+        {
+            { nameof(TestOverviewEntity.IsAvailable), request.NewAvailable },
+            { nameof(TestOverviewEntity.IsRetakeable), request.NewRetakeable },
+        };
+
+        try
+        {
+            _ = await tableClient.UpdateEntityAsync(updateEntity, ETag.All, TableUpdateMode.Merge, token);
+        }
+        catch (RequestFailedException ex)
+        {
+            if (ex.Status == StatusCodes.Status404NotFound)
+            {
+                throw new StatusCodeException(
+                    StatusCodes.Status404NotFound,
+                    "No test with that ID and timestamp could be found.",
+                    ex
+                );
+            }
+
+            throw new StatusCodeException(StatusCodes.Status500InternalServerError, "Failed to update test.", ex);
+        }
+    }
+
     public async Task<TestRowSimple[]> GetTestSimple(Guid testId, CancellationToken token)
     {
         var tableClient = _tableServiceClient.GetTableClient($"{_tablePrefix}{TestsTableName}");
@@ -727,4 +758,5 @@ public interface IVerbitRepository
     Task<AuthenticatedUser> CreateAdminUser(string username, string password, CancellationToken token);
     Task<AuthenticatedUser> GetAdminUser(string username, CancellationToken token);
     Task<MasterListRow[]> AddMasterListRows(Guid listId, AddMasterListRowsRequest request, CancellationToken token);
+    Task EditTestOverview(EditTestOverviewRequest request, CancellationToken token);
 }
