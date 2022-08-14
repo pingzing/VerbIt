@@ -47,6 +47,7 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
             Layout.Title = "Master Lists - Create";
             Layout.BackButtonText = "↑ Go up to Master Lists";
 
+            // If we have a cached list that got nuked by, say, needing to login in, restore it, then clear the cache
             if (await _localStorageService.ContainKeyAsync(PrevSavedMasterList))
             {
                 string savedListString = await _localStorageService.GetItemAsync<string>(PrevSavedMasterList);

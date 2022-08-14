@@ -23,6 +23,7 @@ public record TestRow(
     string TestName,
     int RowNum,
     string[][] Words,
+    int[] HiddenColumnIndices,
     DateTimeOffset TestCreationTimestamp
 );
 
@@ -52,7 +53,8 @@ public record TestWithResults(
     TestResultsOverviewRow[] ResultsSummaries
 );
 
-public record TestRowSimple(int RowNum, string[][] Words);
+// Single question shown on the Admin's detailed test info page.
+public record TestRowSimple(int RowNum, string[][] Words, int[] HiddenColumnIndices);
 
 public record TestResultsOverviewRow(
     Guid StudentId,

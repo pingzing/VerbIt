@@ -41,16 +41,20 @@ namespace VerbIt.Backend.Entities
 
         public string WordsJson { get; set; } = null!;
 
+        public byte[] HiddenColumnsIndices { get; set; } = null!;
+
         public TestRow AsDTO()
         {
             string[][] deserializedWordList = JsonSerializer.Deserialize<string[][]>(WordsJson)!;
-            return new TestRow(TestId, RowId, TestName, RowNum, deserializedWordList, TestCreationTimestamp);
+            int[] hiddenColumnIndices = HiddenColumnsIndices.Cast<int>().ToArray();
+            return new TestRow(TestId, RowId, TestName, RowNum, deserializedWordList, hiddenColumnIndices, TestCreationTimestamp);
         }
 
         public TestRowSimple AsSimpleDTO()
         {
             string[][] deserializedWordList = JsonSerializer.Deserialize<string[][]>(WordsJson)!;
-            return new TestRowSimple(RowNum, deserializedWordList);
+            int[] hiddenColumnIndices = HiddenColumnsIndices.Cast<int>().ToArray();
+            return new TestRowSimple(RowNum, deserializedWordList, hiddenColumnIndices);
         }
     }
 
@@ -71,7 +75,8 @@ namespace VerbIt.Backend.Entities
                 TestName = testName,
                 RowNum = rowNum,
                 TestCreationTimestamp = testCreationTimestamp,
-                WordsJson = JsonSerializer.Serialize(request.Words)
+                WordsJson = JsonSerializer.Serialize(request.Words),
+                HiddenColumnsIndices = request.ColumnsHiddenIndices.Cast<byte>().ToArray(),
             };
         }
     }

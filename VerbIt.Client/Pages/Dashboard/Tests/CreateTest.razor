@@ -1,0 +1,22 @@
+﻿@page "/dashboard/tests/create"
+
+<h3 class="mt-2 text-3xl ml-5">Create New Test</h3>
+
+<section id="controls" class="flex gap-2 m-5">
+    <button class="btn-main" disabled="@IsSaving" @onclick="AddRowClicked">Add row</button>
+    <button class="btn-main-action ml-auto" dislabed="@IsSaving" @onclick="SaveListClicked">Save list</button>
+</section>
+
+<section id="testRowTable" class="flex flex-col px-2">
+    <table class="w-full">
+        <caption>
+            <input class="@(TestNameFieldClass)"
+                type="text"
+                disabled="@IsSaving"
+                placeholder="New Test Name"
+                @bind-value="@(TestName)"
+                @oninput="OnTestNameInput" />
+        </caption>
+    </table>
+</section>
+

@@ -45,6 +45,7 @@ public class AdminTestsController : ControllerBase
     [HttpGet]
     [Route("{testId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<TestWithResults> GetTestDetails(Guid testId, CancellationToken token)
     {
@@ -54,6 +55,7 @@ public class AdminTestsController : ControllerBase
     [HttpPatch]
     [Route("overview/{testId}/edit")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> EditTestOverview(EditTestOverviewRequest request, CancellationToken token)
