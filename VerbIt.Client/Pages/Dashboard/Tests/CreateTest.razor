@@ -7,6 +7,33 @@
     <button class="btn-main-action ml-auto" dislabed="@IsSaving" @onclick="SaveListClicked">Save list</button>
 </section>
 
+<section id="masterListSelector" class="@($"flex flex-col px-2 {(!IsListPickerVisible ? "hidden" : "")}")">
+    <h4 class="mt-2 text-2xl ml-5">First, select Master List as a base</h4>
+    <table class="w-full">
+        <thead>
+            <tr>
+                <th class="font-bold text-left" scope="col">List Name</th>
+                <th class="font-bold" scope="col">Number of Verbs</th>
+                <th class="font-bold" scope="col">Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            if (SavedMasterLists != null)
+            {
+                @foreach (var savedMasterList in SavedMasterLists)
+                {
+                    SavedMasterList localList = savedMasterList;
+                    <tr>
+                        <td class="text-left">
+                            <a @onclick="() => MasterListClicked(localList)">@localList.ListName</a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</section>
+
 <section id="testRowTable" class="flex flex-col px-2">
     <table class="w-full">
         <caption>

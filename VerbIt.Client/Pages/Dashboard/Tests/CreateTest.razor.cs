@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.WebUtilities;
 using VerbIt.Client.Models;
+using VerbIt.DataModels;
 
 namespace VerbIt.Client.Pages.Dashboard.Tests
 {
@@ -15,6 +16,10 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
         private string TestNameFieldClass { get; set; } = "";
         private string TestName { get; set; } = "";
         private bool IsSaving { get; set; } = false;
+
+        private bool IsListPickerVisible { get; set; } = false;
+        private Guid? ChosenMasterList { get; set; } = null;
+        private List<SavedMasterList>? SavedMasterLists = null;
         private List<CreateTestRowVM> RowList { get; set; } = new List<CreateTestRowVM>();
 
         protected override Task OnInitializedAsync()
@@ -24,11 +29,33 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
 
             var thisUri = NavManager.ToAbsoluteUri(NavManager.Uri);
 
-            // TODO: How do we get to this page? Do we require the user to have already selected
-            // a master list to derive from? Or does this page give them a list to pick from?
+            if (QueryHelpers.ParseNullableQuery(thisUri.Query)?.TryGetValue("masterList", out var chosenListString) == true)
+            {
+                if (Guid.TryParse(chosenListString, out Guid chosenListGuid))
+                {
+                    ChosenMasterList = chosenListGuid;
+                }
+            }
+
+            // If the user already has a list set,
+            // don't show the picker, but try to fetch it.
+            if (ChosenMasterList != null)
+            {
+                IsListPickerVisible = false;
+
+                // Somewhere after this (inline? in a method?) try to fetch the list.
+                // If it exists and we get it back display it.
+            }
+            else
+            {
+                // If we DON'T, show the masterListSelector, and prompt the user to pick one.
+                IsListPickerVisible = true;
+            }
 
             return Task.CompletedTask;
         }
+
+        internal void MasterListClicked(SavedMasterList clickedList) { }
 
         internal void AddRowClicked() { }
 
