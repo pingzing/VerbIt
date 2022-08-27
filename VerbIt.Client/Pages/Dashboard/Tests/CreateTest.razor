@@ -3,47 +3,90 @@
 <h3 class="mt-2 text-3xl ml-5">Create New Test</h3>
 
 <section id="controls" class="flex gap-2 m-5">
-    <button class="btn-main" disabled="@IsSaving" @onclick="AddRowClicked">Add row</button>
     <button class="btn-main-action ml-auto" dislabed="@IsSaving" @onclick="SaveListClicked">Save list</button>
 </section>
 
-<section id="masterListSelector" class="@($"flex flex-col px-2 {(!IsListPickerVisible ? "hidden" : "")}")">
-    <h4 class="mt-2 text-2xl ml-5">First, select Master List as a base</h4>
-    <table class="w-full">
-        <thead>
-            <tr>
-                <th class="font-bold text-left" scope="col">List Name</th>
-                <th class="font-bold" scope="col">Number of Verbs</th>
-                <th class="font-bold" scope="col">Created</th>
-            </tr>
-        </thead>
-        <tbody>
-            if (SavedMasterLists != null)
-            {
-                @foreach (var savedMasterList in SavedMasterLists)
-                {
-                    SavedMasterList localList = savedMasterList;
-                    <tr>
-                        <td class="text-left">
-                            <a @onclick="() => MasterListClicked(localList)">@localList.ListName</a>
-                        </td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
+<section id="testNameContainer" class="flex justify-center">
+    <input class="@($"{TestNameFieldClass} text-center")"
+           type="text"
+           disabled="@IsSaving"
+           placeholder="New Test Name"
+           @bind-value="@(TestName)"
+               @oninput="OnTestNameInput" />
 </section>
 
-<section id="testRowTable" class="flex flex-col px-2">
-    <table class="w-full">
-        <caption>
-            <input class="@(TestNameFieldClass)"
-                type="text"
-                disabled="@IsSaving"
-                placeholder="New Test Name"
-                @bind-value="@(TestName)"
-                @oninput="OnTestNameInput" />
-        </caption>
-    </table>
-</section>
+<div class="grid grid-cols-2 gap-5">
+    <section id="masterListSelector" class="@($"flex flex-col px-2 {(!IsListSelectorVisible ? "hidden" : "")}")">
+        <h4 class="mt-2 text-2xl ml-5 text-center">Select base Master List</h4>
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="font-bold text-left" scope="col">List Name</th>
+                    <th class="font-bold" scope="col">Number of Verbs</th>
+                    <th class="font-bold" scope="col">Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (SavedMasterLists != null)
+                {
+                    @foreach (var savedMasterList in SavedMasterLists!)
+                    {
+                        SavedMasterList localList = savedMasterList;
+                        <tr>
+                            <td class="text-left">
+                                <a @onclick="() => MasterListClicked(localList)">@localList.ListName</a>
+                            </td>
+                            <td class="text-center">@localList.TotalRows</td>
+                            <td class="text-center">@localList.ListCreationTimestamp.ToLocalTime().ToString("dd.MM.yyyy @ HH':'mm")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </section>
+
+    <scetion id="masterListDisplyer" class="@($"flex flex-col px-2 {(IsListSelectorVisible ? "hidden" : "")}")">
+        <h4 class="mt-2 text-2xl ml-5 text-center">@ChosenMasterListName</h4>
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="font-bold text-center" colspan="5" scope="col">Words</th>
+                    <th class="font-bold text-center" scope="col">Selected</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (ChosenMasterListRows != null)
+                {
+                    @foreach (var chosenListRow in ChosenMasterListRows)
+                    {
+                        SelectListRowVM localListRow = chosenListRow;
+                        <tr>
+                            <th scope="row" class="text-left">@chosenListRow.RowNum</th>
+                            @{
+                                int colIndex = 0;
+                            }
+                            @foreach (var cellWords in localListRow.Words)
+                            {
+                                int localColIndex = colIndex;
+                                <td>@string.Join(" | ", localListRow.Words[localColIndex])</td>
+                            }
+                            <td class="text-center">
+                                @*TODO: add event handler here that sends row ID*@
+                                <input type="checkbox">
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </scetion>
+
+    <section id="testRowTable" class="flex flex-col px-2">
+        <table class="w-full">
+            <caption>
+            
+            </caption>
+        </table>
+    </section>
+</div>
 
