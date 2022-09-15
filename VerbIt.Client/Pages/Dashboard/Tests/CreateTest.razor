@@ -6,16 +6,8 @@
     <button class="btn-main-action ml-auto" dislabed="@IsSaving" @onclick="SaveListClicked">Save list</button>
 </section>
 
-<section id="testNameContainer" class="flex justify-center">
-    <input class="@($"{TestNameFieldClass} text-center")"
-           type="text"
-           disabled="@IsSaving"
-           placeholder="New Test Name"
-           @bind-value="@(TestName)"
-               @oninput="OnTestNameInput" />
-</section>
-
 <div class="grid grid-cols-2 gap-5">
+    @*Left side, displays master lists to select from*@
     <section id="masterListSelector" class="@($"flex flex-col px-2 {(!IsListSelectorVisible ? "hidden" : "")}")">
         <h4 class="mt-2 text-2xl ml-5 text-center">Select base Master List</h4>
         <table class="w-full">
@@ -34,7 +26,7 @@
                         SavedMasterList localList = savedMasterList;
                         <tr>
                             <td class="text-left">
-                                <a @onclick="() => MasterListClicked(localList)">@localList.ListName</a>
+                                <a class="cursor-pointer" @onclick="() => MasterListClicked(localList)">@localList.ListName</a>
                             </td>
                             <td class="text-center">@localList.TotalRows</td>
                             <td class="text-center">@localList.ListCreationTimestamp.ToLocalTime().ToString("dd.MM.yyyy @ HH':'mm")</td>
@@ -45,6 +37,7 @@
         </table>
     </section>
 
+    @*Left side, displays master list once selected*@
     <scetion id="masterListDisplyer" class="@($"flex flex-col px-2 {(IsListSelectorVisible ? "hidden" : "")}")">
         <h4 class="mt-2 text-2xl ml-5 text-center">@ChosenMasterListName</h4>
         <table class="w-full">
@@ -60,7 +53,7 @@
                     @foreach (var chosenListRow in ChosenMasterListRows)
                     {
                         SelectListRowVM localListRow = chosenListRow;
-                        <tr>
+                        <tr @onclick="() => ChosenMasterListRowClicked(localListRow)">
                             <th scope="row" class="text-left">@chosenListRow.RowNum</th>
                             @{
                                 int colIndex = 0;
@@ -72,7 +65,7 @@
                             }
                             <td class="text-center">
                                 @*TODO: add event handler here that sends row ID*@
-                                <input type="checkbox">
+                                <input type="checkbox" checked=@localListRow.IsSelected @onclick="() => ChosenMasterListCheckChanged(localListRow)">
                             </td>
                         </tr>
                     }
@@ -81,11 +74,21 @@
         </table>
     </scetion>
 
+    @*Right side, displays test-so-far with words chosen from the left*@
     <section id="testRowTable" class="flex flex-col px-2">
+        <input class="@($"{TestNameFieldClass} text-center")"
+               type="text"
+               disabled="@IsSaving"
+               placeholder="New Test Name"
+               @bind-value="@(TestName)"
+               @oninput="OnTestNameInput" />
         <table class="w-full">
-            <caption>
-            
-            </caption>
+            <thead>
+
+            </thead>
+            <tbody>
+
+            </tbody>
         </table>
     </section>
 </div>

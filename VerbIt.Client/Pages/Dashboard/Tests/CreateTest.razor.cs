@@ -27,7 +27,7 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
         private string? ChosenMasterListName { get; set; } = null;
         private List<SelectListRowVM>? ChosenMasterListRows { get; set; } = null;
         private List<SavedMasterList>? SavedMasterLists { get; set; } = null;
-        private List<CreateTestRowVM> TestRows { get; set; } = new List<CreateTestRowVM>();
+        private List<SelectListRowVM> TestRows { get; set; } = new List<SelectListRowVM>();
 
         protected override async Task OnInitializedAsync()
         {
@@ -103,6 +103,48 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             // So, force it with a manual StateHasChanged().
             IsListSelectorVisible = false;
             StateHasChanged();
+        }
+
+        // If the user changed the checkbox. IsSelected is ALREADY updated.
+        internal void ChosenMasterListCheckChanged(SelectListRowVM clickedRow)
+        {
+            if (clickedRow.IsSelected)
+            {
+                AddRowToTest(clickedRow);
+            }
+            else
+            {
+                RemoveRowFromTest(clickedRow);
+            }
+        }
+
+        // If the user just clicked the row. IsSelected must be set manually.
+        internal void ChosenMasterListRowClicked(SelectListRowVM clickedRow)
+        {
+            if (clickedRow.IsSelected)
+            {
+                RemoveRowFromTest(clickedRow);
+                clickedRow.IsSelected = false;
+            }
+            else
+            {
+                clickedRow.IsSelected = true;
+                AddRowToTest(clickedRow);
+            }
+        }
+
+        private void AddRowToTest(SelectListRowVM newRow)
+        {
+            TestRows.Add(newRow);
+        }
+
+        private void RemoveRowFromTest(SelectListRowVM removedRow)
+        {
+            var existingRow = TestRows.FirstOrDefault(x => x.RowId == removedRow.RowId);
+            if (existingRow != null)
+            {
+                TestRows.Remove(existingRow);
+            }
         }
 
         internal void SaveListClicked() { }
