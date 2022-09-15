@@ -44,7 +44,6 @@
             <thead>
                 <tr>
                     <th class="font-bold text-center" colspan="5" scope="col">Words</th>
-                    <th class="font-bold text-center" scope="col">Selected</th>
                 </tr>
             </thead>
             <tbody>
@@ -53,7 +52,8 @@
                     @foreach (var chosenListRow in ChosenMasterListRows)
                     {
                         SelectListRowVM localListRow = chosenListRow;
-                        <tr @onclick="() => ChosenMasterListRowClicked(localListRow)">
+                        <tr @onclick="(args) => ChosenMasterListRowClicked(localListRow, args)" 
+                            class="@($"{(localListRow.IsSelected ? "bg-teal-100" : "")} select-none")">
                             <th scope="row" class="text-left">@chosenListRow.RowNum</th>
                             @{
                                 int colIndex = 0;
@@ -63,10 +63,6 @@
                                 int localColIndex = colIndex;
                                 <td>@string.Join(" | ", localListRow.Words[localColIndex])</td>
                             }
-                            <td class="text-center">
-                                @*TODO: add event handler here that sends row ID*@
-                                <input type="checkbox" checked=@localListRow.IsSelected @onclick="() => ChosenMasterListCheckChanged(localListRow)">
-                            </td>
                         </tr>
                     }
                 }
@@ -84,10 +80,26 @@
                @oninput="OnTestNameInput" />
         <table class="w-full">
             <thead>
-
+                <tr>
+                    <th class="font-bold text-center" colspan="5" scope="col">Words</th>
+                </tr>
             </thead>
             <tbody>
-
+                @foreach(var testRow in TestRows)
+                {
+                    SelectListRowVM localTestRow = testRow;
+                    <tr>
+                        <th scope="row" class="text-left">@localTestRow.RowNum</th>
+                        @{
+                            int colIndex = 0;
+                        }
+                        @foreach (var cellWords in localTestRow.Words) {
+                            int localColIndex = colIndex;
+                            @*TODO: Add ability to reorder rows*@
+                            <td>@string.Join(" | ", localTestRow.Words[localColIndex])</td>
+                        }
+                    </tr>
+                }
             </tbody>
         </table>
     </section>

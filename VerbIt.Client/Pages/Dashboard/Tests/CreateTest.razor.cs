@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Collections.Generic;
 using VerbIt.Client.Models;
@@ -105,32 +106,71 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             StateHasChanged();
         }
 
-        // If the user changed the checkbox. IsSelected is ALREADY updated.
-        internal void ChosenMasterListCheckChanged(SelectListRowVM clickedRow)
-        {
-            if (clickedRow.IsSelected)
-            {
-                AddRowToTest(clickedRow);
-            }
-            else
-            {
-                RemoveRowFromTest(clickedRow);
-            }
-        }
+        SelectListRowVM? _previouslyClicked = null;
 
         // If the user just clicked the row. IsSelected must be set manually.
-        internal void ChosenMasterListRowClicked(SelectListRowVM clickedRow)
+        internal void ChosenMasterListRowClicked(SelectListRowVM clickedRow, MouseEventArgs args)
         {
             if (clickedRow.IsSelected)
             {
-                RemoveRowFromTest(clickedRow);
-                clickedRow.IsSelected = false;
+                if (args.ShiftKey && _previouslyClicked != null)
+                {
+                    // If Shift is held down, remove all selected rows between this and _previouslyClicked
+                    int smallerIndex = Math.Min(
+                        ChosenMasterListRows!.IndexOf(_previouslyClicked),
+                        ChosenMasterListRows.IndexOf(clickedRow)
+                    );
+                    int largerIndex = Math.Max(
+                        ChosenMasterListRows!.IndexOf(_previouslyClicked),
+                        ChosenMasterListRows.IndexOf(clickedRow)
+                    );
+                    var deselectionTargets = ChosenMasterListRows.ToArray()[smallerIndex..(largerIndex + 1)].Where(
+                        x => x.IsSelected
+                    );
+                    foreach (SelectListRowVM toDeselect in deselectionTargets)
+                    {
+                        RemoveRowFromTest(toDeselect);
+                        toDeselect.IsSelected = false;
+                    }
+                }
+                else
+                {
+                    // Single selection
+                    RemoveRowFromTest(clickedRow);
+                    clickedRow.IsSelected = false;
+                }
             }
             else
             {
-                clickedRow.IsSelected = true;
-                AddRowToTest(clickedRow);
+                // If Shift is held down, add all the unselected rows between this and _previouslyClciked
+                if (args.ShiftKey && _previouslyClicked != null)
+                {
+                    int smallerIndex = Math.Min(
+                        ChosenMasterListRows!.IndexOf(_previouslyClicked),
+                        ChosenMasterListRows.IndexOf(clickedRow)
+                    );
+                    int largerIndex = Math.Max(
+                        ChosenMasterListRows!.IndexOf(_previouslyClicked),
+                        ChosenMasterListRows.IndexOf(clickedRow)
+                    );
+                    var selectionTargets = ChosenMasterListRows.ToArray()[smallerIndex..(largerIndex + 1)].Where(
+                        x => x.IsSelected is not true
+                    );
+                    foreach (SelectListRowVM toSelect in selectionTargets)
+                    {
+                        toSelect.IsSelected = true;
+                        AddRowToTest(toSelect);
+                    }
+                }
+                else
+                {
+                    // Single selection
+                    clickedRow.IsSelected = true;
+                    AddRowToTest(clickedRow);
+                }
             }
+
+            _previouslyClicked = clickedRow;
         }
 
         private void AddRowToTest(SelectListRowVM newRow)
