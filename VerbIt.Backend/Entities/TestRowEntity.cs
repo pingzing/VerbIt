@@ -1,5 +1,6 @@
 ﻿using Azure;
 using Azure.Data.Tables;
+using System.ComponentModel.DataAnnotations;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using VerbIt.DataModels;
@@ -43,11 +44,22 @@ namespace VerbIt.Backend.Entities
 
         public byte[] HiddenColumnsIndices { get; set; } = null!;
 
+        public string? Hint { get; set; }
+
         public TestRow AsDTO()
         {
             string[][] deserializedWordList = JsonSerializer.Deserialize<string[][]>(WordsJson)!;
             int[] hiddenColumnIndices = HiddenColumnsIndices.Cast<int>().ToArray();
-            return new TestRow(TestId, RowId, TestName, RowNum, deserializedWordList, hiddenColumnIndices, TestCreationTimestamp);
+            return new TestRow(
+                TestId,
+                RowId,
+                TestName,
+                RowNum,
+                deserializedWordList,
+                hiddenColumnIndices,
+                Hint,
+                TestCreationTimestamp
+            );
         }
 
         public TestRowSimple AsSimpleDTO()
@@ -65,6 +77,7 @@ namespace VerbIt.Backend.Entities
             Guid testId,
             string testName,
             int rowNum,
+            string? hint,
             DateTimeOffset testCreationTimestamp
         )
         {
@@ -76,6 +89,7 @@ namespace VerbIt.Backend.Entities
                 RowNum = rowNum,
                 TestCreationTimestamp = testCreationTimestamp,
                 WordsJson = JsonSerializer.Serialize(request.Words),
+                Hint = hint,
                 HiddenColumnsIndices = request.ColumnsHiddenIndices.Cast<byte>().ToArray(),
             };
         }

@@ -2,8 +2,9 @@
 
 <h3 class="mt-2 text-3xl ml-5">Create New Test</h3>
 
-<section id="controls" class="flex gap-2 m-5">
-    <button class="btn-main-action ml-auto" dislabed="@IsSaving" @onclick="SaveListClicked">Save list</button>
+<section id="controls" class="flex flex-col gap-2 items-end mr-2 mb-2">
+    <button class="btn-main-action" dislabed="@IsSaving" @onclick="SaveListClicked">Save list</button>
+    <p class="@($"text-red-500 {(IsSaveErrorVisible ? "" : "hidden")}")">@SaveErrorString</p>
 </section>
 
 <div class="grid grid-cols-2 gap-5">
@@ -79,15 +80,22 @@
                @bind-value="@(TestName)"
                @oninput="OnTestNameInput" />
         <table class="w-full">
+            <colgroup>
+                <col class="w-[5%]"/>
+                <col class="w-[15%]" span="4" />
+                <col class="w-[25%]" />
+                <col class="w-[10%]" />
+            </colgroup>
             <thead>
                 <tr>
                     <th class="font-bold text-center" colspan="5" scope="col">Words</th>
+                    <th class="font-bold text-center">Hint (optional)</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach(var testRow in TestRows)
                 {
-                    SelectListRowVM localTestRow = testRow;
+                    CreateTestRowVM localTestRow = testRow;
                     <tr>
                         <th scope="row" class="text-left">@localTestRow.RowNum</th>
                         @{
@@ -95,9 +103,25 @@
                         }
                         @foreach (var cellWords in localTestRow.Words) {
                             int localColIndex = colIndex;
-                            @*TODO: Add ability to reorder rows*@
+                            @*TODO: Add ability to click individual cells to mark them as "keep"*@
                             <td>@string.Join(" | ", localTestRow.Words[localColIndex])</td>
                         }
+                        <td><input class="w-full h-full" 
+                            type="text" 
+                            disabled="@IsSaving"
+                            @bind-value="@localTestRow.Hint"/></td>
+                        <td>
+                            <div class="flex flex-col gap-1">
+                                <button class="w-7 p-0.5 btn-main-np"
+                                    type="button"
+                                    disabled="@IsSaving"
+                                    @onclick="() => TestRowUpClicked(localTestRow)">👆</button>
+                                <button class="w-7 p-0.5 btn-main-np"
+                                    type="button"
+                                    disabled="@IsSaving"
+                                    @onclick="() => TestRowDownClicked(localTestRow)">👇</button>
+                            </div>
+                        </td>
                     </tr>
                 }
             </tbody>

@@ -22,13 +22,15 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
         private string TestNameFieldClass { get; set; } = "";
         private string TestName { get; set; } = "";
         private bool IsSaving { get; set; } = false;
+        private string SaveErrorString { get; set; } = "";
+        private bool IsSaveErrorVisible { get; set; } = false;
 
         private bool IsListSelectorVisible { get; set; } = false;
         private Guid? ChosenMasterList { get; set; } = null;
         private string? ChosenMasterListName { get; set; } = null;
         private List<SelectListRowVM>? ChosenMasterListRows { get; set; } = null;
         private List<SavedMasterList>? SavedMasterLists { get; set; } = null;
-        private List<SelectListRowVM> TestRows { get; set; } = new List<SelectListRowVM>();
+        private List<CreateTestRowVM> TestRows { get; set; } = new List<CreateTestRowVM>();
 
         protected override async Task OnInitializedAsync()
         {
@@ -175,7 +177,7 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
 
         private void AddRowToTest(SelectListRowVM newRow)
         {
-            TestRows.Add(newRow);
+            TestRows.Add(new CreateTestRowVM(newRow));
         }
 
         private void RemoveRowFromTest(SelectListRowVM removedRow)
@@ -187,7 +189,35 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             }
         }
 
-        internal void SaveListClicked() { }
+        private void TestRowUpClicked(CreateTestRowVM upRow)
+        {
+            // TODO: Move row up, if possible
+        }
+
+        private void TestRowDownClicked(CreateTestRowVM downRow)
+        {
+            // TODO: Move row down, if possible
+        }
+
+        internal void SaveListClicked()
+        {
+            List<string> errors = new List<string>();
+            if (TestRows.Count <= 0)
+            {
+                errors.Add("• A test must have at least one row.");
+            }
+
+            if (errors.Any())
+            {
+                IsSaveErrorVisible = true;
+                SaveErrorString = string.Join(Environment.NewLine, errors);
+                return;
+            }
+
+            // If no errors, save the list
+            // TODO: Call backend
+            // If fail, use the SaveErrorString.
+        }
 
         internal void OnTestNameInput() { }
     }

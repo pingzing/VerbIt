@@ -28,7 +28,8 @@ public record AddMasterListRowsRequest([Required] [MinLength(1)] CreateMasterLis
 
 public record CreateTestRowRequest(
     [Required] [MinLength(1)] string[][] Words,
-    [Required] [MinLength(1)] int[] ColumnsHiddenIndices
+    [Required] [MinLength(1)] int[] ColumnsHiddenIndices,
+    string? Hint
 );
 
 public record CreateTestRequest(

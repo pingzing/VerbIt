@@ -14,6 +14,14 @@ a {
         focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75;
 }
 
+/*i.e. no padding*/
+.btn-main-np {
+    @apply bg-teal-500 disabled:bg-gray-400 hover:bg-teal-700 active:bg-teal-900 
+        text-white select-none font-bold 
+        rounded 
+        focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75;
+}
+
 .btn-main-action {
     @apply bg-amber-600 disabled:bg-gray-400 hover:bg-amber-800 active:bg-amber-900 
     text-white select-none font-bold 

@@ -24,6 +24,7 @@ public record TestRow(
     int RowNum,
     string[][] Words,
     int[] HiddenColumnIndices,
+    string? Hint,
     DateTimeOffset TestCreationTimestamp
 );
 

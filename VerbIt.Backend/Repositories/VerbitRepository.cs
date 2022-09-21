@@ -443,7 +443,7 @@ public class VerbitRepository : IVerbitRepository
             int rowNum = 1;
             DateTimeOffset testCreationTimestamp = DateTimeOffset.UtcNow;
             List<TestRowEntity> rowsToCreate = request.Rows
-                .Select(createRowRequest => createRowRequest.AsEntity(testId, request.Name, rowNum++, testCreationTimestamp))
+                .Select(rowReq => rowReq.AsEntity(testId, request.Name, rowNum++, rowReq.Hint, testCreationTimestamp))
                 .ToList();
 
             var addEntitiesBatches = rowsToCreate
