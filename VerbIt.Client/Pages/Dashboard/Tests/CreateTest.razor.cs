@@ -14,6 +14,9 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
         private DashboardLayout Layout { get; set; } = null!;
 
         [Inject]
+        private ILogger<CreateTest> _logger { get; set; } = null!;
+
+        [Inject]
         private NavigationManager NavManager { get; set; } = null!;
 
         [Inject]
@@ -189,14 +192,60 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             }
         }
 
+        private void TestRowColumnClicked(CreateTestRowVM row, int columnIndex)
+        {
+            // If index is hidden: just unhide the one
+            if (row.HiddenColumnIndices.Contains(columnIndex))
+            {
+                row.HiddenColumnIndices.Remove(columnIndex);
+            }
+            // If index is not hidden: hide all others
+            else
+            {
+                row.HiddenColumnIndices.Clear();
+                for (int i = 0; i < row.Words.Length; i++)
+                {
+                    if (i == columnIndex)
+                    {
+                        continue;
+                    }
+                    row.HiddenColumnIndices.Add(i);
+                }
+            }
+        }
+
         private void TestRowUpClicked(CreateTestRowVM upRow)
         {
-            // TODO: Move row up, if possible
+            int rowIndex = TestRows.IndexOf(upRow);
+            if (rowIndex == -1)
+            {
+                _logger.LogError("Failed to move test row up--couldn't find it in the list of TestRows.");
+                return;
+            }
+
+            if (rowIndex == 0)
+            {
+                return; // Already at the top
+            }
+            TestRows[rowIndex] = TestRows[rowIndex - 1];
+            TestRows[rowIndex - 1] = upRow;
         }
 
         private void TestRowDownClicked(CreateTestRowVM downRow)
         {
-            // TODO: Move row down, if possible
+            int rowIndex = TestRows.IndexOf(downRow);
+            if (rowIndex == -1)
+            {
+                _logger.LogError("Failed to move test row up--couldn't find it in the list of TestRows.");
+                return;
+            }
+
+            if (rowIndex == TestRows.Count - 1)
+            {
+                return; //Already at the bottom
+            }
+            TestRows[rowIndex] = TestRows[rowIndex + 1];
+            TestRows[rowIndex + 1] = downRow;
         }
 
         internal void SaveListClicked()

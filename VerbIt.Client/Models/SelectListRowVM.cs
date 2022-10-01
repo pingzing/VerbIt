@@ -5,7 +5,7 @@
         public Guid ListId { get; set; }
         public Guid RowId { get; set; }
         public int RowNum { get; set; }
-        public string[][] Words { get; set; }
+        public string[][] Words { get; set; } = null!;
         public bool IsSelected { get; set; }
     }
 }

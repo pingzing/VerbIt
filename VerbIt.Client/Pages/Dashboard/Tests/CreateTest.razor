@@ -79,6 +79,7 @@
                placeholder="New Test Name"
                @bind-value="@(TestName)"
                @oninput="OnTestNameInput" />
+        <p>Click on a word to blank out the other words in that row. Click on a blanked-out word to make it visible again.</p>
         <table class="w-full">
             <colgroup>
                 <col class="w-[5%]"/>
@@ -103,8 +104,11 @@
                         }
                         @foreach (var cellWords in localTestRow.Words) {
                             int localColIndex = colIndex;
-                            @*TODO: Add ability to click individual cells to mark them as "keep"*@
-                            <td>@string.Join(" | ", localTestRow.Words[localColIndex])</td>
+                            <td class="@($"{ (localTestRow.HiddenColumnIndices.Contains(localColIndex) ? "bg-slate-900" : "") }")"
+                                @onclick="() => TestRowColumnClicked(localTestRow, localColIndex)">
+                                @string.Join(" | ", localTestRow.Words[localColIndex])
+                            </td>
+                            colIndex++;
                         }
                         <td><input class="w-full h-full" 
                             type="text" 
@@ -112,14 +116,16 @@
                             @bind-value="@localTestRow.Hint"/></td>
                         <td>
                             <div class="flex flex-col gap-1">
-                                <button class="w-7 p-0.5 btn-main-np"
+                                <button class="w-7 p-0.5 btn-main-np h-4 text-[0.6rem] leading-[0.6rem]"
                                     type="button"
                                     disabled="@IsSaving"
-                                    @onclick="() => TestRowUpClicked(localTestRow)">👆</button>
-                                <button class="w-7 p-0.5 btn-main-np"
+                                    @onclick="() => TestRowUpClicked(localTestRow)">
+                                    ˄
+                                </button>
+                                <button class="w-7 p-0.5 btn-main-np h-4 text-[0.6rem] leading-[0.6rem]"
                                     type="button"
                                     disabled="@IsSaving"
-                                    @onclick="() => TestRowDownClicked(localTestRow)">👇</button>
+                                    @onclick="() => TestRowDownClicked(localTestRow)">˅</button>
                             </div>
                         </td>
                     </tr>
