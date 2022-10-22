@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.WebUtilities;
-using System.Collections.Generic;
 using VerbIt.Client.Models;
 using VerbIt.Client.Services;
 using VerbIt.DataModels;
@@ -40,39 +38,15 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             Layout.Title = "Tests - Create";
             Layout.BackButtonText = "↑ Go up to Tests";
 
-            var thisUri = NavManager.ToAbsoluteUri(NavManager.Uri);
-
-            if (QueryHelpers.ParseNullableQuery(thisUri.Query)?.TryGetValue("masterList", out var chosenListString) == true)
+            IsListSelectorVisible = true;
+            var savedMasterLists = await _networkService.GetMasterLists(CancellationToken.None);
+            if (savedMasterLists == null)
             {
-                if (Guid.TryParse(chosenListString, out Guid chosenListGuid))
-                {
-                    ChosenMasterList = chosenListGuid;
-                }
+                // TODO: Display sadness
+                return;
             }
 
-            // If the user already has a list set,
-            // don't show the picker, but try to fetch it.
-            if (ChosenMasterList != null)
-            {
-                IsListSelectorVisible = false;
-
-                // Somewhere after this (inline? in a method?) try to fetch the list.
-                // If it exists and we get it back display it.
-                await FetchAndDisplayMasterList(ChosenMasterList.Value, CancellationToken.None);
-            }
-            else
-            {
-                // If we DON'T, show the masterListSelector, and prompt the user to pick one.
-                IsListSelectorVisible = true;
-                var savedMasterLists = await _networkService.GetMasterLists(CancellationToken.None);
-                if (savedMasterLists == null)
-                {
-                    // TODO: Display sadness
-                    return;
-                }
-
-                SavedMasterLists = savedMasterLists.ToList();
-            }
+            SavedMasterLists = savedMasterLists.ToList();
         }
 
         internal async void MasterListClicked(SavedMasterList clickedList)
@@ -82,7 +56,7 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
 
         internal async Task FetchAndDisplayMasterList(Guid listId, CancellationToken token)
         {
-            var fetchedList = await _networkService.GetMasterList(listId, CancellationToken.None);
+            var fetchedList = await _networkService.GetMasterList(listId, token);
             if (fetchedList == null)
             {
                 // TODO: Show error, and be sad
@@ -113,7 +87,6 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
 
         SelectListRowVM? _previouslyClicked = null;
 
-        // If the user just clicked the row. IsSelected must be set manually.
         internal void ChosenMasterListRowClicked(SelectListRowVM clickedRow, MouseEventArgs args)
         {
             if (clickedRow.IsSelected)
@@ -164,23 +137,18 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
                     foreach (SelectListRowVM toSelect in selectionTargets)
                     {
                         toSelect.IsSelected = true;
-                        AddRowToTest(toSelect);
+                        TestRows.Add(new CreateTestRowVM(toSelect));
                     }
                 }
                 else
                 {
                     // Single selection
                     clickedRow.IsSelected = true;
-                    AddRowToTest(clickedRow);
+                    TestRows.Add(new CreateTestRowVM(clickedRow));
                 }
             }
 
             _previouslyClicked = clickedRow;
-        }
-
-        private void AddRowToTest(SelectListRowVM newRow)
-        {
-            TestRows.Add(new CreateTestRowVM(newRow));
         }
 
         private void RemoveRowFromTest(SelectListRowVM removedRow)
@@ -248,26 +216,60 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             TestRows[rowIndex + 1] = downRow;
         }
 
-        internal void SaveListClicked()
+        internal async void SaveListClicked()
         {
+            IsSaveErrorVisible = false;
+            SaveErrorString = "";
+            IsSaving = true;
+
             List<string> errors = new List<string>();
+            if (ChosenMasterList == null || ChosenMasterListName == null)
+            {
+                errors.Add("• You need to choose a Master List first. If you don't see any, you should go make one!");
+            }
             if (TestRows.Count <= 0)
             {
                 errors.Add("• A test must have at least one row.");
+            }
+            if (string.IsNullOrWhiteSpace(TestName))
+            {
+                errors.Add("• A test must have a name.");
             }
 
             if (errors.Any())
             {
                 IsSaveErrorVisible = true;
                 SaveErrorString = string.Join(Environment.NewLine, errors);
+                IsSaving = false;
+                StateHasChanged();
                 return;
             }
 
-            // If no errors, save the list
-            // TODO: Call backend
-            // If fail, use the SaveErrorString.
-        }
+            // Save the list
+            TestRow[]? result = await _networkService.CreateTest(
+                new CreateTestRequest(
+                    Name: TestName,
+                    Rows: TestRows
+                        .Select(x => new CreateTestRowRequest(x.Words, x.HiddenColumnIndices.ToArray(), x.Hint))
+                        .ToArray(),
+                    SourceList: ChosenMasterList!.Value,
+                    SourceListName: ChosenMasterListName!
+                ),
+                CancellationToken.None
+            );
 
-        internal void OnTestNameInput() { }
+            if (result == null)
+            {
+                IsSaveErrorVisible = true;
+                SaveErrorString = "Failed to save your new test.";
+                IsSaving = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Request succeeded
+            IsSaving = false;
+            NavManager.NavigateTo("dashboard/tests");
+        }
     }
 }

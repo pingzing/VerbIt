@@ -63,6 +63,7 @@
                             {
                                 int localColIndex = colIndex;
                                 <td>@string.Join(" | ", localListRow.Words[localColIndex])</td>
+                                colIndex++;
                             }
                         </tr>
                     }
@@ -77,8 +78,7 @@
                type="text"
                disabled="@IsSaving"
                placeholder="New Test Name"
-               @bind-value="@(TestName)"
-               @oninput="OnTestNameInput" />
+               @bind-value="@(TestName)"/>
         <p>Click on a word to blank out the other words in that row. Click on a blanked-out word to make it visible again.</p>
         <table class="w-full">
             <colgroup>
@@ -115,7 +115,7 @@
                             disabled="@IsSaving"
                             @bind-value="@localTestRow.Hint"/></td>
                         <td>
-                            <div class="flex flex-col gap-1">
+                            <div class="flex flex-col">
                                 <button class="w-7 p-0.5 btn-main-np h-4 text-[0.6rem] leading-[0.6rem]"
                                     type="button"
                                     disabled="@IsSaving"

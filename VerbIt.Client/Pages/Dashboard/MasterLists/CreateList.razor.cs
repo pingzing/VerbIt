@@ -109,8 +109,8 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
             if (string.IsNullOrWhiteSpace(ListName))
             {
                 ListNameFieldClass = ListNameErrorClass;
-                IsSaving = false;
                 UploadCsvButtonClass = UploadCsvDefaultClass;
+                IsSaving = false;
                 return;
             }
 
@@ -127,17 +127,19 @@ namespace VerbIt.Client.Pages.Dashboard.MasterLists
             if (createdList == null)
             {
                 // TODO: Display an error. If we got a 401, we'll be redirected to /login shortly
+                UploadCsvButtonClass = UploadCsvDefaultClass;
+                IsSaving = false;
+                return;
             }
-            else
-            {
-                // Request succeeded, no need to keep the saved state around
-                await _localStorageService.RemoveItemAsync(PrevSavedMasterList);
-                NavManager.NavigateTo("dashboard/masterlists");
-            }
+
+            // Request succeeded, no need to keep the saved state around
+            await _localStorageService.RemoveItemAsync(PrevSavedMasterList);
 
             // Save list, redirect back to "see all master lists" page
             UploadCsvButtonClass = UploadCsvDefaultClass;
             IsSaving = false;
+
+            NavManager.NavigateTo("dashboard/masterlists");
         }
 
         internal void OnListNameInput()
