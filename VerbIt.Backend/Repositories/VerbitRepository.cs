@@ -595,7 +595,12 @@ public class VerbitRepository : IVerbitRepository
         {
             AsyncPageable<TestRowEntity> testQuery = tableClient.QueryAsync<TestRowEntity>(
                 x => x.PartitionKey == testId.ToString(),
-                select: new[] { nameof(TestRowEntity.RowNum), nameof(TestRowEntity.WordsJson) },
+                select: new[]
+                {
+                    nameof(TestRowEntity.RowNum),
+                    nameof(TestRowEntity.HiddenColumnsIndices),
+                    nameof(TestRowEntity.WordsJson)
+                },
                 cancellationToken: token
             );
 

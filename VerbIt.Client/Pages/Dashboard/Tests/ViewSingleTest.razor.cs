@@ -18,11 +18,9 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
 
         [Parameter]
         public string TestId { get; set; } = null!;
-        private bool _testExists = false;
         private Guid? _testId = null;
 
-        private string? TestName { get; set; } = null;
-        private List<TestRowSimple> TestQuestions { get; set; } = new List<TestRowSimple>();
+        private TestWithResults? TestData { get; set; } = null;
 
         protected override async Task OnInitializedAsync()
         {
@@ -43,10 +41,8 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             }
 
             // Init properties for razor to see
-            _testExists = true;
             Layout.Title = $"Tests - {test.TestName}";
-            TestName = test.TestName;
-            TestQuestions = new List<TestRowSimple>(test.Questions);
+            TestData = test;
         }
     }
 }

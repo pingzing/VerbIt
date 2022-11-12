@@ -41,7 +41,7 @@ public class TestsService : ITestsService
             testOverviewTask.Result.IsAvailable,
             testOverviewTask.Result.IsRetakeable,
             testOverviewTask.Result.SourceList,
-            simpleQuestionsTask.Result,
+            simpleQuestionsTask.Result.OrderBy(x => x.RowNum).ToArray(),
             resultsOverviewTask.Result
         );
     }

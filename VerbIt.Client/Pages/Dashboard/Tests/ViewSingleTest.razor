@@ -1,13 +1,31 @@
 ﻿@page "/dashboard/tests/{testId}"
+@using VerbIt.Client.Constants
 
-@if (_testExists && _testId != null)
+@if (_testId != null && TestData != null)
 {
-    <h3 class="mt-2 ml-5 text-3xl">Test - @TestName</h3>
+    <h3 class="mt-2 ml-5 text-3xl">Test - @TestData!.TestName</h3>
+
+    <section id="testProperties" class="flex px-5 gap-5">
+        <p>
+            Created: @(TestData!.TestCreationTimestamp.ToLocalTime().ToString(TimeAndDate.VerbitDateFormat))
+        </p>
+        <p>
+            Currently Available?: @(TestData!.IsAvailable)
+        </p>
+        <p>
+            Currently Retakeable?: @(TestData!.IsRetakeable)
+        </p>
+        @*TODO: Update DB model to include source list name as well*@
+        <p>
+            Source Master List: <NavLink href=@($"/dashboard/masterlists/{TestData.SourceList}")>@(TestData.SourceList)</NavLink>
+            </p>
+    </section>
+
     <h4 class="mt-2 ml-5 text-2xl">Questions</h4>
 
     <section id="testQuestions" class="flex flex-col px-2">
-        <table class="w-full">
-            @foreach (var row in TestQuestions)
+        <table class="w-full ml-3">
+            @foreach (var row in TestData!.Questions)
             {
                 var localRow = row;
                 <tr>
@@ -22,7 +40,15 @@
     </section>
 
     <section id="testResultsOverview">
-        @*Get (all?) test results from the TestResultsOverview table for this test, and display them here*@
+        <h4 class="mt-2 ml-5 text-2xl">Results</h4>
+        @if (!TestData.ResultsSummaries.Any())
+        {
+            <p class="ml-5">It doesn't look like there are any results for this test.</p>
+        } 
+        else 
+        {
+            @*Display test results here*@
+        }
     </section>
 }
 else 

@@ -1,4 +1,5 @@
 ﻿@page "/dashboard/tests/create"
+@using VerbIt.Client.Constants
 
 <h3 class="mt-2 text-3xl ml-5">Create New Test</h3>
 
@@ -30,7 +31,7 @@
                                 <a class="cursor-pointer" @onclick="() => MasterListClicked(localList)">@localList.ListName</a>
                             </td>
                             <td class="text-center">@localList.TotalRows</td>
-                            <td class="text-center">@localList.ListCreationTimestamp.ToLocalTime().ToString("dd.MM.yyyy @ HH':'mm")</td>
+                            <td class="text-center">@localList.ListCreationTimestamp.ToLocalTime().ToString(TimeAndDate.VerbitDateFormat)</td>
                         </tr>
                     }
                 }
