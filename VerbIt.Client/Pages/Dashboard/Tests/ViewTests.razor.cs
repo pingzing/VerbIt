@@ -1,5 +1,6 @@
 ﻿using Blazored.Modal.Services;
 using Microsoft.AspNetCore.Components;
+using VerbIt.Client.Components;
 using VerbIt.Client.Models;
 using VerbIt.Client.Services;
 using VerbIt.DataModels;
@@ -23,12 +24,15 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
         [Inject]
         private INetworkService _networkService { get; set; } = null!;
 
+        private LoadingState GetTestLoadingState { get; set; } = LoadingState.NotStarted;
         private List<TestOverviewEntryVM> TestsList { get; set; } = new List<TestOverviewEntryVM>();
 
         protected override async Task OnInitializedAsync()
         {
             Layout.Title = "Tests";
             Layout.BackButtonText = "↑ Go up to Dashboard";
+
+            GetTestLoadingState = LoadingState.Loading;
 
             TestsList.Clear();
             string? continuationToken = null;
@@ -37,12 +41,14 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
                 var getTestsOverviewReuslt = await _networkService.GetTestOverview(continuationToken, CancellationToken.None);
                 if (getTestsOverviewReuslt == null)
                 {
-                    // TODO: Show error
+                    GetTestLoadingState = LoadingState.Failure;
                     return;
                 }
                 continuationToken = getTestsOverviewReuslt.ContinuationToken;
                 TestsList.AddRange(getTestsOverviewReuslt.OverviewEntries.Select(x => new TestOverviewEntryVM(x)));
             } while (continuationToken != null);
+
+            GetTestLoadingState = LoadingState.Success;
         }
 
         private async Task AvailableChanged(TestOverviewEntryVM changedEntry)

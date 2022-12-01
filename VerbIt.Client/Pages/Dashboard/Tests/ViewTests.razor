@@ -6,47 +6,49 @@
     <NavLink class="btn-main-action hover:text-white no-underline" href="@($"{NavManager.Uri}/create")">Create new test</NavLink>
 </section>
 
-<section class="flex flex-col mt-2 px-5">
-    @if (TestsList == null || TestsList.Count == 0)
-    {
-        <p>It looks like you haven't created any tests yet!</p>
-    }
-    else
-    {
-        <table class="w-full">
-            <thead>
-                <tr>
-                    <th class="text-left" scope="col">Test Name</th>
-                    <th scope="col">Total Rows</th>
-                    <th scope="col">Available?</th>
-                    <th scope="col">Retakeable?</th>
-                    <th scope="col">Source Master List</th>
-                    <th scope="col">Created</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var test in TestsList)
-                {
-                    TestOverviewEntryVM localEntry = test;
+<LoadingComponent State="GetTestLoadingState" FailureText="Failed to retrieve list of tests.">
+    <section class="flex flex-col mt-2 px-5">    
+        @if (TestsList == null || TestsList.Count == 0)
+        {
+            <p>It looks like you haven't created any tests yet!</p>
+        }
+        else
+        {
+            <table class="w-full">
+                <thead>
                     <tr>
-                        <td>
-                            <NavLink href="@($"{NavManager.Uri}/{localEntry.TestId}")">@localEntry.TestName</NavLink>
-                        </td>
-                        <td class="text-center">@(localEntry.TotalRows)</td>
-                        <td class="text-center">
-                            <input type="checkbox" checked="@localEntry.IsAvailable" @onchange="() => AvailableChanged(localEntry)">
-                        </td>
-                        <td class="text-center">
-                            <input type="checkbox" checked="@localEntry.IsRetakeable" @onchange="() => RetakeableChanged(localEntry)">
-                        </td>
-                        <td class="text-center">
-                            <NavLink href="@($"/dashboard/masterlists/{localEntry.SourceList}")">@(localEntry.SourceListName)</NavLink>
-                        </td>
-                        <td class="text-center">@(localEntry.TestCreationTimestamp.ToLocalTime().ToString("dd.MM.yyyy @ HH':'mm"))</td>
-                        <td><button class="btn-main" @onclick="() => DeleteTest(localEntry)">x</button></td>
+                        <th class="text-left" scope="col">Test Name</th>
+                        <th scope="col">Total Rows</th>
+                        <th scope="col">Available?</th>
+                        <th scope="col">Retakeable?</th>
+                        <th scope="col">Source Master List</th>
+                        <th scope="col">Created</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    }
-</section>
+                </thead>
+                <tbody>
+                    @foreach (var test in TestsList)
+                    {
+                        TestOverviewEntryVM localEntry = test;
+                        <tr>
+                            <td>
+                                <NavLink href="@($"{NavManager.Uri}/{localEntry.TestId}")">@localEntry.TestName</NavLink>
+                            </td>
+                            <td class="text-center">@(localEntry.TotalRows)</td>
+                            <td class="text-center">
+                                <input type="checkbox" checked="@localEntry.IsAvailable" @onchange="() => AvailableChanged(localEntry)">
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" checked="@localEntry.IsRetakeable" @onchange="() => RetakeableChanged(localEntry)">
+                            </td>
+                            <td class="text-center">
+                                <NavLink href="@($"/dashboard/masterlists/{localEntry.SourceList}")">@(localEntry.SourceListName)</NavLink>
+                            </td>
+                            <td class="text-center">@(localEntry.TestCreationTimestamp.ToLocalTime().ToString("dd.MM.yyyy @ HH':'mm"))</td>
+                            <td><button class="btn-main" @onclick="() => DeleteTest(localEntry)">x</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+</LoadingComponent>

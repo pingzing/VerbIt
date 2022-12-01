@@ -859,6 +859,47 @@ a:hover {
   font-style: italic;
 }
 
+/*Loading spinner*/
+
+.load-spinner {
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+}
+
+.load-spinner:after {
+  content: " ";
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 8px;
+  border-radius: 50%;
+  border: 6px solid #0f766e;
+  border-color: #0f766e transparent #0f766e transparent;
+  -webkit-animation: load-spinner 1.2s linear infinite;
+          animation: load-spinner 1.2s linear infinite;
+}
+
+@-webkit-keyframes load-spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes load-spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* This is basically button styles, but some extra shenanigans to detect focus on the interior element.
  * This style gets used on the enclosing <label> (or whatever) that wraps around an <InputFile> to make it
  *  behave like a button. Needs to be paired with .hidden-file-input below.

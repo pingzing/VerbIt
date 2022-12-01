@@ -1,0 +1,23 @@
+﻿@if (State == LoadingState.NotStarted) {
+    if (NotStartedContent != null) {
+        @NotStartedContent
+    } else {        
+    }
+
+} else if (State == LoadingState.Loading) {
+    if (LoadingContent != null) {
+        @LoadingContent
+    } else {
+        <div class="load-spinner"></div>
+    }
+
+} else if (State == LoadingState.Success) {
+    @ChildContent
+
+} else if (State == LoadingState.Failure) {
+    if (FailureContent != null) {
+        @FailureContent
+    } else {
+        <span style="display: inline-block; vertical-align: super">@(FailureText ?? "Loading failure.")</span>
+    }
+}

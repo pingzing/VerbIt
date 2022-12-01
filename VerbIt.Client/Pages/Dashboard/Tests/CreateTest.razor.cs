@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using VerbIt.Client.Components;
 using VerbIt.Client.Models;
 using VerbIt.Client.Services;
 using VerbIt.DataModels;
@@ -26,6 +27,8 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
         private string SaveErrorString { get; set; } = "";
         private bool IsSaveErrorVisible { get; set; } = false;
 
+        private LoadingState AllMasterListsLoadState { get; set; } = LoadingState.NotStarted;
+        private LoadingState SelectedMasterListSLoadState { get; set; } = LoadingState.NotStarted;
         private bool IsListSelectorVisible { get; set; } = false;
         private Guid? ChosenMasterList { get; set; } = null;
         private string? ChosenMasterListName { get; set; } = null;
@@ -39,13 +42,15 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             Layout.BackButtonText = "↑ Go up to Tests";
 
             IsListSelectorVisible = true;
+            AllMasterListsLoadState = LoadingState.Loading;
             var savedMasterLists = await _networkService.GetMasterLists(CancellationToken.None);
             if (savedMasterLists == null)
             {
-                // TODO: Display sadness
+                AllMasterListsLoadState = LoadingState.Failure;
                 return;
             }
 
+            AllMasterListsLoadState = LoadingState.Success;
             SavedMasterLists = savedMasterLists.ToList();
         }
 
@@ -56,12 +61,14 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
 
         internal async Task FetchAndDisplayMasterList(Guid listId, CancellationToken token)
         {
+            SelectedMasterListSLoadState = LoadingState.Loading;
             var fetchedList = await _networkService.GetMasterList(listId, token);
             if (fetchedList == null)
             {
-                // TODO: Show error, and be sad
+                SelectedMasterListSLoadState = LoadingState.Failure;
                 return;
             }
+            SelectedMasterListSLoadState = LoadingState.Success;
 
             ChosenMasterList = listId;
             ChosenMasterListName = fetchedList[0].ListName;

@@ -1,11 +1,11 @@
 ﻿@page "/dashboard/tests/{testId}"
 @using VerbIt.Client.Constants
 
-@if (_testId != null && TestData != null)
-{
+<LoadingComponent State="TestDetailsLoadingState" FailureText=@($"Couldn't retrieve test with ID: '{TestId}'")>    
     <h3 class="mt-2 ml-5 text-3xl">Test - @TestData!.TestName</h3>
 
     <section id="testProperties" class="flex px-5 gap-5">
+        @*TODO: Make changing these fire network requests to edit the test*@
         <p>
             Created: @(TestData!.TestCreationTimestamp.ToLocalTime().ToString(TimeAndDate.VerbitDateFormat))
         </p>
@@ -49,9 +49,5 @@
         {
             @*Display test results here*@
         }
-    </section>
-}
-else 
-{
-    <NotFoundComponent/>
-}
+    </section>         
+</LoadingComponent>
