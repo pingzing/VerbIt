@@ -50,6 +50,7 @@ public record TestWithResults(
     bool IsAvailable,
     bool IsRetakeable,
     Guid SourceList,
+    string SourceListName,
     TestRowSimple[] Questions,
     TestResultsOverviewRow[] ResultsSummaries
 );

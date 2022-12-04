@@ -1,5 +1,7 @@
 ﻿using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using VerbIt.Client.Components;
 using VerbIt.Client.Services;
 using VerbIt.DataModels;
@@ -23,6 +25,8 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
 
         private LoadingState TestDetailsLoadingState { get; set; } = LoadingState.NotStarted;
         private TestWithResults? TestData { get; set; } = null;
+        private bool IsAvailable { get; set; }
+        private bool IsRetakeable { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
@@ -49,6 +53,30 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             // Init properties for razor to see
             Layout.Title = $"Tests - {test.TestName}";
             TestData = test;
+            IsAvailable = TestData.IsAvailable;
+            IsRetakeable = TestData.IsRetakeable;
+        }
+
+        private async Task IsAvailableChanged(ChangeEventArgs e)
+        {
+            bool newValue = (bool)e.Value;
+            IsAvailable = newValue;
+            await Task.Yield(); // Force asynchrony to allow the renderer time to see the new value
+
+            // TODO: Network request to set it
+            // On failure:
+            IsAvailable = !newValue;
+        }
+
+        private async Task IsRetakeableChanged(ChangeEventArgs e)
+        {
+            bool newValue = (bool)e.Value;
+            IsRetakeable = newValue;
+            await Task.Yield(); // Force asynchrony to allow the renderer time to see the new value
+
+            // TODO: Network request to set it
+            // On failure:
+            IsRetakeable = !newValue;
         }
     }
 }

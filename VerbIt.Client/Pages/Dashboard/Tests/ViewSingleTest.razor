@@ -1,53 +1,76 @@
 ﻿@page "/dashboard/tests/{testId}"
 @using VerbIt.Client.Constants
 
-<LoadingComponent State="TestDetailsLoadingState" FailureText=@($"Couldn't retrieve test with ID: '{TestId}'")>    
-    <h3 class="mt-2 ml-5 text-3xl">Test - @TestData!.TestName</h3>
+<LoadingComponent State="TestDetailsLoadingState" FailureText=@($"Couldn't retrieve test with ID: '{TestId}'")> 
+    @if (TestData != null)
+    {
+        <h3 class="mt-2 ml-5 text-3xl">Test - @TestData.TestName</h3>
 
-    <section id="testProperties" class="flex px-5 gap-5">
-        @*TODO: Make changing these fire network requests to edit the test*@
-        <p>
-            Created: @(TestData!.TestCreationTimestamp.ToLocalTime().ToString(TimeAndDate.VerbitDateFormat))
-        </p>
-        <p>
-            Currently Available?: @(TestData!.IsAvailable)
-        </p>
-        <p>
-            Currently Retakeable?: @(TestData!.IsRetakeable)
-        </p>
-        @*TODO: Update DB model to include source list name as well*@
-        <p>
-            Source Master List: <NavLink href=@($"/dashboard/masterlists/{TestData.SourceList}")>@(TestData.SourceList)</NavLink>
+        <section id="testProperties" class=" mt-2 ml-5 grid gap-4 grid-flow-col auto-cols-max">
+            @*TODO: Make changing these fire network requests to edit the test*@
+            @*Row 1*@
+            <p class="col-start-1 col-end-1">
+                Created
             </p>
-    </section>
+            <p class="col-start-2 col-end-2 text-right">
+                @(TestData.TestCreationTimestamp.ToLocalTime().ToString(TimeAndDate.VerbitDateFormat))
+            </p>
 
-    <h4 class="mt-2 ml-5 text-2xl">Questions</h4>
+            @*Row 2*@
+            <p class="row-start-2 row-end-2 col-start-1 col-end-1">
+                Currently Available
+            </p>
+            <input class="row-start-2 row-end-2 col-start-2 col-end-2 text-right"
+                type="checkbox"
+                checked=@IsAvailable
+                @onchange="async e => await IsAvailableChanged(e)"/>
 
-    <section id="testQuestions" class="flex flex-col px-2">
-        <table class="w-full ml-3">
-            @foreach (var row in TestData!.Questions)
+            @*Row 3*@
+            <p class="row-start-3 row-end-3 col-start-1 col-end-1">
+                Currently Retakeable
+            </p>
+            <input class="row-start-3 row-end-3 col-start-2 col-end-2 text-right"
+                type="checkbox"
+                checked=@IsRetakeable
+                @onchange="async e => await IsRetakeableChanged(e)"/>
+
+            @*Row 4*@
+            <p class="row-start-4 row-end-4 col-start-1 col-end-1">
+                Source Master List
+            </p>
+            <p class="row-start-4 row-end-4 col-start-2 col-end-2 text-right">
+                <NavLink href=@($"/dashboard/masterlists/{TestData.SourceList}")>@(TestData.SourceListName)</NavLink>
+            </p>
+        </section>
+
+        <h4 class="mt-2 ml-5 text-2xl">Questions</h4>
+
+        <section id="testQuestions" class="flex flex-col px-2">
+            <table class="w-full ml-3">
+                @foreach (var row in TestData.Questions)
+                {
+                    var localRow = row;
+                    <tr>
+                        <th scope="row" class="text-left">@localRow.RowNum</th>
+                        @foreach (string[] cellWords in localRow.Words)
+                        {
+                            <td>@string.Join(" | ", cellWords)</td>
+                        }
+                    </tr>
+                }
+            </table>
+        </section>
+
+        <section id="testResultsOverview">
+            <h4 class="mt-2 ml-5 text-2xl">Results</h4>
+            @if (!TestData.ResultsSummaries.Any())
             {
-                var localRow = row;
-                <tr>
-                    <th scope="row" class="text-left">@localRow.RowNum</th>
-                    @foreach (string[] cellWords in localRow.Words)
-                    {
-                        <td>@string.Join(" | ", cellWords)</td>
-                    }
-                </tr>
+                <p class="ml-5">It doesn't look like anyone has taken this test yet.</p>
+            } 
+            else 
+            {
+                @*Display test results here*@
             }
-        </table>
-    </section>
-
-    <section id="testResultsOverview">
-        <h4 class="mt-2 ml-5 text-2xl">Results</h4>
-        @if (!TestData.ResultsSummaries.Any())
-        {
-            <p class="ml-5">It doesn't look like there are any results for this test.</p>
-        } 
-        else 
-        {
-            @*Display test results here*@
-        }
-    </section>         
+        </section>         
+    }
 </LoadingComponent>
