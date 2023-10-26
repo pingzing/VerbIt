@@ -30,8 +30,8 @@
                     {
                         TestOverviewEntryVM localEntry = test;
                         <tr>
-                            <td>
-                                <NavLink href="@($"{NavManager.Uri}/{localEntry.TestId}")">@localEntry.TestName</NavLink>
+                            <td>                                
+                                <NavLink href="@($"{NavManager.Uri}/{localEntry.TestId}/{localEntry.TestCreationTimestamp:o}")">@localEntry.TestName</NavLink>                                
                             </td>
                             <td class="text-center">@(localEntry.TotalRows)</td>
                             <td class="text-center">

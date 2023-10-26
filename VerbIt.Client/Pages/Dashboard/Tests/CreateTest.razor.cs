@@ -223,7 +223,7 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             TestRows[rowIndex + 1] = downRow;
         }
 
-        internal async void SaveListClicked()
+        internal async void SaveTestClicked()
         {
             IsSaveErrorVisible = false;
             SaveErrorString = "";

@@ -1,4 +1,4 @@
-﻿@page "/dashboard/tests/{testId}"
+﻿@page "/dashboard/tests/{testId}/{timestamp?}"
 @using VerbIt.Client.Constants
 
 <LoadingComponent State="TestDetailsLoadingState" FailureText=@($"Couldn't retrieve test with ID: '{TestId}'")> 
@@ -6,8 +6,7 @@
     {
         <h3 class="mt-2 ml-5 text-3xl">Test - @TestData.TestName</h3>
 
-        <section id="testProperties" class=" mt-2 ml-5 grid gap-4 grid-flow-col auto-cols-max">
-            @*TODO: Make changing these fire network requests to edit the test*@
+        <section id="testProperties" class=" mt-2 ml-5 grid gap-4 grid-flow-col auto-cols-max">            
             @*Row 1*@
             <p class="col-start-1 col-end-1">
                 Created
@@ -20,7 +19,7 @@
             <p class="row-start-2 row-end-2 col-start-1 col-end-1">
                 Currently Available
             </p>
-            <input class="row-start-2 row-end-2 col-start-2 col-end-2 text-right"
+            <input class="row-start-2 row-end-2 col-start-2 col-end-2 text-center"
                 type="checkbox"
                 checked=@IsAvailable
                 @onchange="async e => await IsAvailableChanged(e)"/>
@@ -29,7 +28,7 @@
             <p class="row-start-3 row-end-3 col-start-1 col-end-1">
                 Currently Retakeable
             </p>
-            <input class="row-start-3 row-end-3 col-start-2 col-end-2 text-right"
+            <input class="row-start-3 row-end-3 col-start-2 col-end-2 text-center"
                 type="checkbox"
                 checked=@IsRetakeable
                 @onchange="async e => await IsRetakeableChanged(e)"/>
@@ -38,7 +37,7 @@
             <p class="row-start-4 row-end-4 col-start-1 col-end-1">
                 Source Master List
             </p>
-            <p class="row-start-4 row-end-4 col-start-2 col-end-2 text-right">
+            <p class="row-start-4 row-end-4 col-start-2 col-end-2 text-center">
                 <NavLink href=@($"/dashboard/masterlists/{TestData.SourceList}")>@(TestData.SourceListName)</NavLink>
             </p>
         </section>
@@ -46,7 +45,7 @@
         <h4 class="mt-2 ml-5 text-2xl">Questions</h4>
 
         <section id="testQuestions" class="flex flex-col px-2">
-            <table class="w-full ml-3">
+            <table class="w-95 ml-5">
                 @foreach (var row in TestData.Questions)
                 {
                     var localRow = row;
@@ -69,7 +68,7 @@
             } 
             else 
             {
-                @*Display test results here*@
+                @*TODO: Display test results here*@
             }
         </section>         
     }

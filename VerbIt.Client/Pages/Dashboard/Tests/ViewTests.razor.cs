@@ -55,17 +55,17 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
         {
             // TODO: Ask are you sure?
             changedEntry.IsAvailable = !changedEntry.IsAvailable;
-            await CallEditOverview(changedEntry, CancellationToken.None);
+            await EditOverview(changedEntry, CancellationToken.None);
         }
 
         private async Task RetakeableChanged(TestOverviewEntryVM changedEntry)
         {
             // TODO: Ask are you sure?
             changedEntry.IsRetakeable = !changedEntry.IsRetakeable;
-            await CallEditOverview(changedEntry, CancellationToken.None);
+            await EditOverview(changedEntry, CancellationToken.None);
         }
 
-        private async Task CallEditOverview(TestOverviewEntryVM changedEntry, CancellationToken token)
+        private async Task EditOverview(TestOverviewEntryVM changedEntry, CancellationToken token)
         {
             // TODO: Show loading indicator, disable row
 

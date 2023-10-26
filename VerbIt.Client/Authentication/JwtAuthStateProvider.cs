@@ -2,10 +2,11 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using VerbIt.Client.Services;
+using System.Text.Json;
 
 namespace VerbIt.Client.Authentication;
 
+// This is used to power the <AuthorizeView> component.
 public class JwtAuthStateProvider : AuthenticationStateProvider
 {
     public const string AuthTokenKey = "authToken";
@@ -30,18 +31,14 @@ public class JwtAuthStateProvider : AuthenticationStateProvider
         }
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", jwt);
 
-        var authState = new AuthenticationState(
-            new ClaimsPrincipal(new ClaimsIdentity(JwtParser.ParseClaims(jwt), "jwtAuthType"))
-        );
+        var authState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(ParseClaims(jwt), "jwtAuthType")));
 
         return authState;
     }
 
     public void NotifyUserAuthentication(string jwt)
     {
-        ClaimsPrincipal authenticatedUserClaim = new ClaimsPrincipal(
-            new ClaimsIdentity(JwtParser.ParseClaims(jwt), "jwtAuthType")
-        );
+        ClaimsPrincipal authenticatedUserClaim = new ClaimsPrincipal(new ClaimsIdentity(ParseClaims(jwt), "jwtAuthType"));
 
         Task<AuthenticationState> newAuthState = Task.FromResult(new AuthenticationState(authenticatedUserClaim));
         NotifyAuthenticationStateChanged(newAuthState);
@@ -51,5 +48,32 @@ public class JwtAuthStateProvider : AuthenticationStateProvider
     {
         Task<AuthenticationState> newAuthState = Task.FromResult(_unauthenticated);
         NotifyAuthenticationStateChanged(newAuthState);
+    }
+
+    private static IEnumerable<Claim> ParseClaims(string jwt)
+    {
+        string? payload = jwt.Split('.')[1];
+        if (payload == null)
+        {
+            return Array.Empty<Claim>();
+        }
+
+        byte[] jsonBytes = ParseBase64WithoutPadding(payload);
+
+        Dictionary<string, object>? keyPairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes)!;
+        return keyPairs.Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()!)).ToList();
+    }
+
+    private static byte[] ParseBase64WithoutPadding(string base64)
+    {
+        // Add padding characters if they're missing.
+        base64 += (base64.Length % 4) switch
+        {
+            2 => "==",
+            3 => "=",
+            _ => "",
+        };
+
+        return Convert.FromBase64String(base64);
     }
 }

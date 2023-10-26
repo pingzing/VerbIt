@@ -23,6 +23,10 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
         public string TestId { get; set; } = null!;
         private Guid? _testId = null;
 
+        [Parameter]
+        public string? Timestamp { get; set; } = null!;
+        private DateTimeOffset? _testCreationTimestamp = null;
+
         private LoadingState TestDetailsLoadingState { get; set; } = LoadingState.NotStarted;
         private TestWithResults? TestData { get; set; } = null;
         private bool IsAvailable { get; set; }
@@ -40,6 +44,18 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             }
 
             _testId = testId;
+
+            if (!DateTimeOffset.TryParse(Timestamp, out DateTimeOffset testCreationTimestamp))
+            {
+                TestDetailsLoadingState = LoadingState.Failure;
+                return;
+            }
+
+            _testCreationTimestamp = testCreationTimestamp;
+
+            // Remove the timestamp from the URL, so it doesn't mess with our
+            // "go up" button, or clutter up the address bar
+            NavManager.NavigateTo(NavManager.Uri.Replace(Timestamp, ""), false, replace: true);
 
             TestDetailsLoadingState = LoadingState.Loading;
             TestWithResults? test = await _networkService.GetTestDetails(_testId.Value, CancellationToken.None);
@@ -63,9 +79,11 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             IsAvailable = newValue;
             await Task.Yield(); // Force asynchrony to allow the renderer time to see the new value
 
-            // TODO: Network request to set it
-            // On failure:
-            IsAvailable = !newValue;
+            bool result = await EditOverview(CancellationToken.None, newValue, null);
+            if (!result)
+            {
+                IsAvailable = !newValue;
+            }
         }
 
         private async Task IsRetakeableChanged(ChangeEventArgs e)
@@ -74,9 +92,19 @@ namespace VerbIt.Client.Pages.Dashboard.Tests
             IsRetakeable = newValue;
             await Task.Yield(); // Force asynchrony to allow the renderer time to see the new value
 
-            // TODO: Network request to set it
-            // On failure:
-            IsRetakeable = !newValue;
+            bool result = await EditOverview(CancellationToken.None, null, newValue);
+            if (!result)
+            {
+                IsRetakeable = !newValue;
+            }
+        }
+
+        private async Task<bool> EditOverview(CancellationToken token, bool? newAvailable = null, bool? newRetakeable = null)
+        {
+            return await _networkService.EditTestOverview(
+                new EditTestOverviewRequest(_testCreationTimestamp!.Value, _testId!.Value, newAvailable, newRetakeable),
+                token
+            );
         }
     }
 }

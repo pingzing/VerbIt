@@ -4,7 +4,7 @@
 <h3 class="mt-2 text-3xl ml-5">Create New Test</h3>
 
 <section id="controls" class="flex flex-col gap-2 items-end mr-2 mb-2">
-    <button class="btn-main-action" dislabed="@IsSaving" @onclick="SaveListClicked">Save list</button>
+    <button class="btn-main-action" dislabed="@IsSaving" @onclick="SaveTestClicked">Save test</button>
     <p class="@($"text-red-500 {(IsSaveErrorVisible ? "" : "hidden")}")">@SaveErrorString</p>
 </section>
 
@@ -87,14 +87,14 @@
         <p>Click on a word to blank out the other words in that row. Click on a blanked-out word to make it visible again.</p>
         <table class="w-full">
             <colgroup>
+                <col class="w-[3%]" />
                 <col class="w-[5%]"/>
                 <col class="w-[15%]" span="4" />
-                <col class="w-[25%]" />
-                <col class="w-[10%]" />
+                <col class="w-[25%]" />                
             </colgroup>
             <thead>
                 <tr>
-                    <th class="font-bold text-center" colspan="5" scope="col">Words</th>
+                    <th class="font-bold text-center" colspan="6" scope="col">Words</th>
                     <th class="font-bold text-center">Hint (optional)</th>
                 </tr>
             </thead>
@@ -103,6 +103,22 @@
                 {
                     CreateTestRowVM localTestRow = testRow;
                     <tr>
+                        <td>
+                            <div class="flex flex-col">
+                                <button class="w-7 p-0.5 btn-main-np h-4 text-[0.6rem] leading-[0.6rem]"
+                                        type="button"
+                                        disabled="@IsSaving"
+                                @onclick="() => TestRowUpClicked(localTestRow)">
+                                    ˄
+                                </button>
+                                <button class="w-7 p-0.5 btn-main-np h-4 text-[0.6rem] leading-[0.6rem]"
+                                        type="button"
+                                        disabled="@IsSaving"
+                                @onclick="() => TestRowDownClicked(localTestRow)">
+                                    ˅
+                                </button>
+                            </div>
+                        </td>
                         <th scope="row" class="text-left">@localTestRow.RowNum</th>
                         @{
                             int colIndex = 0;
@@ -118,21 +134,7 @@
                         <td><input class="w-full h-full" 
                             type="text" 
                             disabled="@IsSaving"
-                            @bind-value="@localTestRow.Hint"/></td>
-                        <td>
-                            <div class="flex flex-col">
-                                <button class="w-7 p-0.5 btn-main-np h-4 text-[0.6rem] leading-[0.6rem]"
-                                    type="button"
-                                    disabled="@IsSaving"
-                                    @onclick="() => TestRowUpClicked(localTestRow)">
-                                    ˄
-                                </button>
-                                <button class="w-7 p-0.5 btn-main-np h-4 text-[0.6rem] leading-[0.6rem]"
-                                    type="button"
-                                    disabled="@IsSaving"
-                                    @onclick="() => TestRowDownClicked(localTestRow)">˅</button>
-                            </div>
-                        </td>
+                            @bind-value="@localTestRow.Hint"/></td>                        
                     </tr>
                 }
             </tbody>
